@@ -1,8 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '@prisma/client';
-import { UserRole } from 'src/utils/enums/User';
+import { Genre, User, UserRole } from '@prisma/client';
 
-export class UserEntity implements User {
+export class UserEntity implements Partial<User> {
   @ApiProperty()
   id: string;
   @ApiProperty()
@@ -10,7 +9,17 @@ export class UserEntity implements User {
   @ApiProperty()
   email: string;
   @ApiProperty()
-  password: string;
-  @ApiProperty()
   role: UserRole;
+  @ApiProperty()
+  createdAt: Date;
+  @ApiProperty()
+  updatedAt: Date;
+  @ApiProperty()
+  genres: Genre[];
+  @ApiProperty()
+  isVerified: boolean;
+
+  constructor(partial: Partial<UserEntity>) {
+    Object.assign(this, partial);
+  }
 }
