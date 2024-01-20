@@ -4,61 +4,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 
-// async create(registerUserDto: RegisterUserDto): Promise<UserEntity> {
-//   const { email, username, password, genreIds, role } = registerUserDto;
-//   const user_role = role as UserRole;
-//   // Check if the user already exists
-//   const existingEmail = await this.prisma.user.findUnique({
-//     where: { email },
-//   });
-
-//   if (existingEmail) {
-//     throw new ConflictException('Email is already taken');
-//   }
-
-//   const existingUsername = await this.prisma.user.findUnique({
-//     where: { username },
-//   });
-//   if (existingUsername) {
-//     throw new ConflictException('Username is already taken');
-//   }
-
-//   const hashedPassword = await getHashedPassword(password);
-//   const userData = {
-//     email,
-//     username,
-//     password: hashedPassword,
-//     role: user_role,
-//   };
-
-//   if (genreIds && genreIds.length > 0) {
-//     const existingGenres = await this.prisma.genre.findMany({
-//       where: {
-//         id: {
-//           in: genreIds,
-//         },
-//       },
-//     });
-
-//     if (existingGenres.length !== genreIds.length) {
-//       throw new BadRequestException('Selected genres are invalid.');
-//     }
-//     userData['genres'] = {
-//       connect: genreIds.map((genreId) => ({ id: genreId })),
-//     };
-//   }
-
-//   const user = await this.prisma.user.create({
-//     data: userData,
-//     include: {
-//       genres: true,
-//     },
-//   });
-
-//   delete user.password;
-//   return user;
-// }
-
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -67,8 +12,8 @@ export class UsersService {
     return 'This action adds a new user';
   }
 
-  findAll() {
-    return this.prisma.user.findMany();
+  async findAll() {
+    return await this.prisma.user.findMany();
   }
 
   findOne(id: string) {
@@ -88,11 +33,12 @@ export class UsersService {
     }
 
     const { username, email, role, genreIds } = updateUserDto;
+    const user_role = role as UserRole;
 
     const updatedUserData = {
-      username,
-      email,
-      role,
+      ...(username && { username }),
+      ...(email && { email }),
+      ...(user_role && { role: user_role }),
     };
 
     if (genreIds && genreIds.length > 0) {

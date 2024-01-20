@@ -1,4 +1,5 @@
 // src/auth/dto/register-user.dto.ts
+import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import {
   IsEmail,
@@ -12,12 +13,12 @@ import {
 } from 'class-validator';
 
 export class RegisterUserDto {
+  @ApiProperty()
   @IsNotEmpty({
     message: 'Username is required.',
   })
   @IsString()
   username: string;
-
   @IsEmail(
     {
       allow_display_name: true,
@@ -31,6 +32,7 @@ export class RegisterUserDto {
   )
   email: string;
 
+  @ApiProperty()
   @IsNotEmpty({
     message: 'Password is required.',
   })
@@ -41,10 +43,12 @@ export class RegisterUserDto {
   })
   password: string;
 
+  @ApiProperty()
   @IsOptional()
   @IsIn(Object.values(UserRole))
   role?: string;
 
+  @ApiProperty()
   @IsArray()
   @IsOptional()
   genreIds?: Array<string>;
