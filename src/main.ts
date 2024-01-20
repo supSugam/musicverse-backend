@@ -9,7 +9,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('MusicVerse')
-    .setDescription('Aa music sharing platform.')
+    .setDescription('A music sharing platform.')
     .setVersion('0.1')
     .build();
 
