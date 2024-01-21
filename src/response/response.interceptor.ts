@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
@@ -20,7 +21,10 @@ export class ResponseInterceptor implements NestInterceptor {
     );
   }
 
-  errorHandler(exception: HttpException, context: ExecutionContext) {
+  errorHandler(
+    exception: HttpException | Prisma.PrismaClientKnownRequestError,
+    context: ExecutionContext
+  ) {
     const ctx = context.switchToHttp();
     const response = ctx.getResponse();
     const request = ctx.getRequest();
@@ -28,15 +32,31 @@ export class ResponseInterceptor implements NestInterceptor {
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : exception instanceof Prisma.PrismaClientKnownRequestError
+          ? HttpStatus.BAD_REQUEST
+          : HttpStatus.INTERNAL_SERVER_ERROR;
 
     response.status(status).json({
       status: false,
       statusCode: status,
       path: request.url,
-      message: exception.message,
+      message:
+        exception instanceof Prisma.PrismaClientKnownRequestError
+          ? this.extractPrismaErrorMessage(exception)
+          : exception.message,
       result: exception,
     });
+  }
+
+  private extractPrismaErrorMessage(
+    error: Prisma.PrismaClientKnownRequestError
+  ): string {
+    // Extract error message from Prisma error
+    let errMsg = error.meta?.cause;
+    if (typeof errMsg === 'string') {
+      return errMsg;
+    }
+    return 'Unknown, Check Prisma error object.';
   }
 
   responseHandler(res: any, context: ExecutionContext) {

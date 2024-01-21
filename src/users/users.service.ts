@@ -70,7 +70,30 @@ export class UsersService {
     return updatedUser;
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    return await this.prisma.user
+      .delete({
+        where: { id },
+      })
+      .catch((err) => {
+        throw err;
+      });
+  }
+
+  async updateVerifiedStatus(email: string, status: boolean) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return await this.prisma.user.update({
+      where: { email },
+      data: {
+        isVerified: status,
+      },
+    });
   }
 }
