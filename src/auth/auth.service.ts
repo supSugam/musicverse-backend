@@ -8,9 +8,13 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { getHashedPassword } from 'src/utils/helpers/Hasher';
 import { UserRole } from '@prisma/client';
+import { MailService } from 'src/mail/mail.service';
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly mailService: MailService
+  ) {}
   async create(registerUserDto: RegisterUserDto): Promise<UserEntity> {
     const { email, username, password, genreIds, role } = registerUserDto;
     const user_role = role as UserRole;
@@ -60,6 +64,13 @@ export class AuthService {
       include: {
         genres: true,
       },
+    });
+
+    await this.mailService.sendResendOtp({
+      email: user.email,
+      name: user.username,
+      subject: 'Email Verification',
+      text: '',
     });
 
     delete user.password;

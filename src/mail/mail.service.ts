@@ -8,10 +8,13 @@ import { SendOtpDto } from './dto/send-otp.dto';
 import * as pug from 'pug';
 import * as path from 'path';
 import { ISendMailOptions, MailerService } from '@nestjs-modules/mailer';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 @Injectable()
 export class MailService {
   private readonly SENDER_EMAIL: string;
   private readonly logger = new Logger(MailService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly mailerMain: MailerService
@@ -24,8 +27,41 @@ export class MailService {
     return pug.renderFile(template, data);
   }
 
-  async sendOtpAsMail(sendOtpDto: SendOtpDto) {
-    const { email, otp, name, subject, text } = sendOtpDto;
+  // OTP related
+  private ACTIVE_OTPs = new Map<string, { otp: string; timestamp: number }>();
+
+  generateOtp(email: string): string {
+    const otp = this.generateRandomOtp();
+    const timestamp = Date.now();
+    this.ACTIVE_OTPs.set(email, { otp, timestamp });
+    return otp;
+  }
+
+  getOtp(email: string): string | undefined {
+    const entry = this.ACTIVE_OTPs.get(email);
+    return entry?.otp;
+  }
+
+  deleteOtp(email: string): void {
+    this.ACTIVE_OTPs.delete(email);
+  }
+
+  @Cron(CronExpression.EVERY_10_SECONDS)
+  cleanExpiredOtps(): void {
+    const now = Date.now();
+    this.ACTIVE_OTPs.forEach((value, key) => {
+      if (now - value.timestamp > 5 * 60 * 1000) {
+        this.ACTIVE_OTPs.delete(key);
+      }
+    });
+  }
+
+  generateRandomOtp(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async sendResendOtp(sendOtpDto: SendOtpDto) {
+    const { email, name, subject, text } = sendOtpDto;
     const data = {
       subject,
       text,
@@ -35,29 +71,46 @@ export class MailService {
       process.cwd(),
       '/templates/otp-verification.pug'
     );
+
+    // Check if OTP exists in the map
+    if (this.ACTIVE_OTPs.has(email)) {
+      this.deleteOtp(email);
+    }
+    this.generateOtp(email);
+
     const render = this._bodytemplate(templateFile, {
       name,
-      otp: otp.toString().split(''),
+      otp: this.getOtp(email).split(''),
       title: subject,
     });
 
-    await this._processSendEmail({
+    const OTP_SENT = await this._processSendEmail({
       ...data,
       to: email,
       from: this.SENDER_EMAIL,
       html: render,
     });
+    if (OTP_SENT) {
+      return { message: 'OTP sent successfully.' };
+    } else {
+      return { message: 'Failed to send OTP.' };
+    }
   }
 
-  async _processSendEmail(body: Partial<ISendMailOptions>): Promise<void> {
-    await this.mailerMain
-      .sendMail(body)
-      .then(() => {
-        this.logger.log(`Email sent to ${body.to}`);
-      })
-      .catch((e) => {
-        this.logger.error(`Error sending email to ${body.to}`, e);
-        throw new InternalServerErrorException('Error sending email');
-      });
+  async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<boolean> {
+    if (this.getOtp(verifyOtpDto.email) === verifyOtpDto.otp.toString()) {
+      this.deleteOtp(verifyOtpDto.email);
+      return true;
+    }
+    return false;
+  }
+
+  async _processSendEmail(body: Partial<ISendMailOptions>): Promise<boolean> {
+    try {
+      await this.mailerMain.sendMail(body);
+      return true;
+    } catch (error) {
+      throw new InternalServerErrorException('Error sending email.');
+    }
   }
 }

@@ -1,21 +1,7 @@
-//send-otp.dto.ts
-
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNumber, IsOptional } from 'class-validator';
 
-export class SendOtpDto {
-  @ApiProperty()
-  @IsOptional()
-  name?: string = 'Listener';
-
-  @ApiProperty()
-  @IsOptional()
-  subject?: string = 'OTP Verification';
-
-  @ApiProperty()
-  @IsOptional()
-  text?: string = 'OTP Verification';
-
+export class VerifyOtpDto {
   @ApiProperty()
   @IsEmail(
     {
@@ -29,4 +15,13 @@ export class SendOtpDto {
     }
   )
   email: string;
+
+  @ApiProperty()
+  @IsNumber(
+    {},
+    {
+      message: 'OTP must be purely numeric.',
+    }
+  )
+  otp: number;
 }
