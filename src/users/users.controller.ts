@@ -7,26 +7,37 @@ import {
   Delete,
   UseGuards,
   Request,
+  Logger,
+  Response,
+  Post,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { UserEntity } from './entities/user.entity';
-// import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthService } from 'src/auth/auth.service';
 
 @Controller('users')
 @ApiTags('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService
+  ) {}
 
   @Get()
-  // @ApiCreatedResponse({
-  //   type: [UserEntity],
-  //   description: 'List of users',
-  //   isArray: true,
-  // })
   async findAll() {
     return await this.usersService.findAll();
+  }
+
+  @Get('/current-user')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ type: UserEntity, description: 'Get current user' })
+  async getCurrentUser(@Request() request: Request) {
+    return {
+      user: request['user'],
+    };
   }
 
   @Get(':id')
@@ -47,10 +58,5 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-  // @Get('current-user')
-  // @UseGuards(AuthGuard)
-  // @ApiCreatedResponse({ type: UserEntity, description: 'Get the current user' })
-  // getCurrentUser(@Request() request: Request) {
-  //   return request['user'];
-  // }
+  // TODO: Profile Routes
 }

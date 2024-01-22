@@ -1,5 +1,11 @@
 // src/auth/auth.controller.ts
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Request,
+  ValidationPipe,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { ApiCreatedResponse } from '@nestjs/swagger';

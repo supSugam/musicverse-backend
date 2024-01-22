@@ -39,12 +39,20 @@ export class UsersService {
     });
   }
 
-  findOneById(id: string) {
-    return this.prisma.user.findUnique({
-      where: {
-        id,
-      },
-    });
+  async findOneById(id: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        include: {
+          genres: true,
+        },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+    } catch (err) {
+      throw new NotFoundException('User not found');
+    }
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -134,4 +142,6 @@ export class UsersService {
       },
     });
   }
+
+  // TODO: Create Profile, Update Profile, Delete Profile
 }

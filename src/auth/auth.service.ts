@@ -1,10 +1,7 @@
 import {
-  BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   UnauthorizedException,
-  forwardRef,
 } from '@nestjs/common';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UserEntity } from 'src/users/entities/user.entity';
@@ -12,7 +9,6 @@ import { comparePassword, getHashedPassword } from 'src/utils/helpers/Hasher';
 import { UserRole } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
 import { LoginUserDto } from './dto/login-user.dto';
-import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { CredentialsType } from 'src/utils/enums/Auth';
 import { JWT_SECRET } from 'src/utils/constants';
@@ -26,6 +22,12 @@ export class AuthService {
   ) {}
 
   async validateToken(token: string) {
+    return this.jwtService.verify(token, {
+      secret: JWT_SECRET,
+    });
+  }
+
+  async invalidateToken(token: string) {
     return this.jwtService.verify(token, {
       secret: JWT_SECRET,
     });
