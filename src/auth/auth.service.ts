@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
+  forwardRef,
 } from '@nestjs/common';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UserEntity } from 'src/users/entities/user.entity';
@@ -13,31 +15,41 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { CredentialsType } from 'src/utils/enums/Auth';
+import { JWT_SECRET } from 'src/utils/constants';
+import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
     private readonly mailService: MailService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    private readonly prismaService: PrismaService
   ) {}
+
+  async validateToken(token: string) {
+    return this.jwtService.verify(token, {
+      secret: JWT_SECRET,
+    });
+  }
 
   async create(registerUserDto: RegisterUserDto): Promise<UserEntity> {
     const { email, username, password, genreIds, role } = registerUserDto;
     const user_role = role as UserRole;
     // Check if the user already exists
-    const existingEmail = await this.usersService.findOne(
-      email,
-      CredentialsType.EMAIL
-    );
+    const existingEmail = await this.prismaService.user.findUnique({
+      where: {
+        email,
+      },
+    });
 
     if (existingEmail) {
       throw new ConflictException('Email is already taken');
     }
 
-    const existingUsername = await this.usersService.findOne(
-      username,
-      CredentialsType.USERNAME
-    );
+    const existingUsername = await this.prismaService.user.findUnique({
+      where: {
+        username,
+      },
+    });
     if (existingUsername) {
       throw new ConflictException('Username is already taken');
     }
@@ -67,7 +79,9 @@ export class AuthService {
     //   };
     // }
 
-    const user = await this.usersService.create(userData);
+    const user = await this.prismaService.user.create({
+      data: userData,
+    });
 
     await this.mailService.sendResendOtp({
       email: user.email,
@@ -84,10 +98,12 @@ export class AuthService {
 
   async signIn(signInDto: LoginUserDto) {
     const { usernameOrEmail, credentialsType } = signInDto;
-    const user = await this.usersService.findOne(
-      usernameOrEmail,
-      credentialsType
-    );
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        [credentialsType === CredentialsType.EMAIL ? 'email' : 'username']:
+          usernameOrEmail,
+      },
+    });
 
     if (!user) {
       throw new UnauthorizedException('Invalid Credentials, Please try again.');

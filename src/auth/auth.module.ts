@@ -3,7 +3,6 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { MailModule } from 'src/mail/mail.module';
-import { UsersModule } from 'src/users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JWT_SECRET } from 'src/utils/constants';
 
@@ -13,8 +12,8 @@ import { JWT_SECRET } from 'src/utils/constants';
   imports: [
     PrismaModule,
     MailModule,
-    UsersModule,
     JwtModule.register({
+      global: true,
       secret: JWT_SECRET,
       signOptions: { expiresIn: '60s' },
     }),

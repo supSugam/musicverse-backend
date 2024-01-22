@@ -17,7 +17,6 @@ import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
     ConfigModule.forRoot({
       envFilePath: '.env',
       isGlobal: true,
-      cache: true,
     }),
     // use my own gmail
     MailerModule.forRoot({

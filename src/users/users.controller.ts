@@ -1,17 +1,18 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Patch,
   Param,
   Delete,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { UserEntity } from './entities/user.entity';
+// import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('users')
 @ApiTags('users')
@@ -45,4 +46,11 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
+
+  // @Get('current-user')
+  // @UseGuards(AuthGuard)
+  // @ApiCreatedResponse({ type: UserEntity, description: 'Get the current user' })
+  // getCurrentUser(@Request() request: Request) {
+  //   return request['user'];
+  // }
 }

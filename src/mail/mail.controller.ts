@@ -9,14 +9,14 @@ import { MailService } from './mail.service';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { UsersService } from 'src/users/users.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('auth')
 @ApiTags('auth/mail-service')
 export class MailController {
   constructor(
     private readonly mailService: MailService,
-    private readonly usersService: UsersService
+    private readonly prismaService: PrismaService
   ) {}
 
   @Post('resend-otp')
@@ -36,7 +36,10 @@ export class MailController {
   ) {
     const res = await this.mailService.verifyOtp(verifyOtpDto);
     if (res) {
-      await this.usersService.updateVerifiedStatus(verifyOtpDto.email, true);
+      await this.prismaService.user.update({
+        where: { email: verifyOtpDto.email },
+        data: { isVerified: true },
+      });
       return { message: 'OTP Verification Successful.' };
     } else {
       // throw unauthorized exception
