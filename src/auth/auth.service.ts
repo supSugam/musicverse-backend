@@ -2,34 +2,42 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UserEntity } from 'src/users/entities/user.entity';
-import { getHashedPassword } from 'src/utils/helpers/Hasher';
+import { comparePassword, getHashedPassword } from 'src/utils/helpers/Hasher';
 import { UserRole } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
+import { LoginUserDto } from './dto/login-user.dto';
+import { UsersService } from 'src/users/users.service';
+import { JwtService } from '@nestjs/jwt';
+import { CredentialsType } from 'src/utils/enums/Auth';
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private readonly mailService: MailService
+    private usersService: UsersService,
+    private readonly mailService: MailService,
+    private jwtService: JwtService
   ) {}
+
   async create(registerUserDto: RegisterUserDto): Promise<UserEntity> {
     const { email, username, password, genreIds, role } = registerUserDto;
     const user_role = role as UserRole;
     // Check if the user already exists
-    const existingEmail = await this.prisma.user.findUnique({
-      where: { email },
-    });
+    const existingEmail = await this.usersService.findOne(
+      email,
+      CredentialsType.EMAIL
+    );
 
     if (existingEmail) {
       throw new ConflictException('Email is already taken');
     }
 
-    const existingUsername = await this.prisma.user.findUnique({
-      where: { username },
-    });
+    const existingUsername = await this.usersService.findOne(
+      username,
+      CredentialsType.USERNAME
+    );
     if (existingUsername) {
       throw new ConflictException('Username is already taken');
     }
@@ -42,29 +50,24 @@ export class AuthService {
       role: user_role,
     };
 
-    if (genreIds && genreIds.length > 0) {
-      const existingGenres = await this.prisma.genre.findMany({
-        where: {
-          id: {
-            in: genreIds,
-          },
-        },
-      });
+    // if (genreIds && genreIds.length > 0) {
+    //   const existingGenres = await this.usersService.genre.findMany({
+    //     where: {
+    //       id: {
+    //         in: genreIds,
+    //       },
+    //     },
+    //   });
 
-      if (existingGenres.length !== genreIds.length) {
-        throw new BadRequestException('Selected genres are invalid.');
-      }
-      userData['genres'] = {
-        connect: genreIds.map((genreId) => ({ id: genreId })),
-      };
-    }
+    //   if (existingGenres.length !== genreIds.length) {
+    //     throw new BadRequestException('Selected genres are invalid.');
+    //   }
+    //   userData['genres'] = {
+    //     connect: genreIds.map((genreId) => ({ id: genreId })),
+    //   };
+    // }
 
-    const user = await this.prisma.user.create({
-      data: userData,
-      include: {
-        genres: true,
-      },
-    });
+    const user = await this.usersService.create(userData);
 
     await this.mailService.sendResendOtp({
       email: user.email,
@@ -75,5 +78,47 @@ export class AuthService {
 
     delete user.password;
     return user;
+  }
+
+  // User Sign In (User can login with both email and username)
+
+  async signIn(signInDto: LoginUserDto) {
+    const { usernameOrEmail, credentialsType } = signInDto;
+    const user = await this.usersService.findOne(
+      usernameOrEmail,
+      credentialsType
+    );
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid Credentials, Please try again.');
+    }
+
+    // if(!user.isVerified) {
+    //   throw new UnauthorizedException('Please verify your email to login.');
+    // }
+
+    const isPasswordValid = await comparePassword(
+      signInDto.password,
+      user.password
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Incorrect Password');
+    }
+
+    const payload = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      isVerified: user.isVerified,
+    };
+
+    const token = await this.jwtService.signAsync(payload);
+
+    return {
+      access_token: token,
+      user: payload,
+    };
   }
 }

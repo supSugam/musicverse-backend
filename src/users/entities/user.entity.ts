@@ -15,8 +15,6 @@ export class UserEntity implements Partial<User> {
   @ApiProperty()
   updatedAt: Date;
   @ApiProperty()
-  genres: Genre[];
-  @ApiProperty()
   isVerified: boolean;
 
   constructor(partial: Partial<UserEntity>) {

@@ -19,11 +19,11 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @ApiCreatedResponse({
-    type: [UserEntity],
-    description: 'List of users',
-    isArray: true,
-  })
+  // @ApiCreatedResponse({
+  //   type: [UserEntity],
+  //   description: 'List of users',
+  //   isArray: true,
+  // })
   async findAll() {
     return await this.usersService.findAll();
   }
@@ -31,7 +31,7 @@ export class UsersController {
   @Get(':id')
   @ApiCreatedResponse({ type: UserEntity, description: 'Get a user by Id' })
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOneById(id);
   }
 
   @Patch(':id')
@@ -41,7 +41,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @ApiCreatedResponse({ type: UserEntity, description: 'Delete a user by Id' })
+  @ApiCreatedResponse({ description: 'Delete a user by Id' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }

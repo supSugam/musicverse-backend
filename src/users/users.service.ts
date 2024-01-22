@@ -3,21 +3,48 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserRole } from '@prisma/client';
+import { CredentialsType } from 'src/utils/enums/Auth';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+    return this.prisma.user.create({
+      data: createUserDto,
+    });
   }
 
   async findAll() {
-    return await this.prisma.user.findMany();
+    const users = await this.prisma.user.findMany();
+    const count = await this.prisma.user.count();
+    return {
+      users,
+      count,
+    };
   }
 
-  findOne(id: string) {
-    return `This action returns a ${id} user`;
+  findOne(usernameOrEmail: string, credentialsType: CredentialsType) {
+    if (credentialsType === CredentialsType.EMAIL) {
+      return this.prisma.user.findUnique({
+        where: {
+          email: usernameOrEmail,
+        },
+      });
+    }
+    return this.prisma.user.findUnique({
+      where: {
+        username: usernameOrEmail,
+      },
+    });
+  }
+
+  findOneById(id: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -71,13 +98,24 @@ export class UsersService {
   }
 
   async remove(id: string) {
-    return await this.prisma.user
-      .delete({
+    try {
+      const user = await this.prisma.user.findUnique({
         where: { id },
-      })
-      .catch((err) => {
-        throw err;
       });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await this.prisma.user.delete({
+        where: { id },
+      });
+      return {
+        message: 'User deleted successfully',
+      };
+    } catch (err) {
+      throw new NotFoundException('User not found');
+    }
   }
 
   async updateVerifiedStatus(email: string, status: boolean) {

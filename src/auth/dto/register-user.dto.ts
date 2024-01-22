@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsIn,
   Matches,
+  IsEnum,
 } from 'class-validator';
 
 export class RegisterUserDto {
@@ -45,8 +46,8 @@ export class RegisterUserDto {
 
   @ApiProperty()
   @IsOptional()
-  @IsIn(Object.values(UserRole))
-  role?: string;
+  @IsEnum(UserRole)
+  role?: UserRole = UserRole.USER;
 
   @ApiProperty()
   @IsArray()
