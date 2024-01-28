@@ -43,19 +43,16 @@ export class ResponseInterceptor implements NestInterceptor {
       : HttpStatus.INTERNAL_SERVER_ERROR;
 
     response.status(status).json({
-      status: false,
       path: request.url,
-      response: {
-        status: statusCode,
-        message: isPrismaClientKnownRequestError
-          ? this.extractPrismaErrorMessage(exception)
-          : this.extractErrorMessage(exception),
-        ...(isPrismaClientKnownRequestError && {
-          code: exception.code,
-          meta: exception.meta,
-        }),
-        success: false,
-      },
+      statusCode: statusCode,
+      message: isPrismaClientKnownRequestError
+        ? this.extractPrismaErrorMessage(exception)
+        : this.extractErrorMessage(exception),
+      ...(isPrismaClientKnownRequestError && {
+        code: exception.code,
+        meta: exception.meta,
+      }),
+      success: false,
     });
   }
 
@@ -73,19 +70,26 @@ export class ResponseInterceptor implements NestInterceptor {
   }
 
   private extractErrorMessage(error: HttpException): string[] {
-    const message = error.getResponse() as string | { message: string[] };
-    return typeof message === 'string' ? [message] : message.message;
+    const response = error.getResponse() as any;
+    const messages = [];
+    if (typeof response.message === 'string') {
+      messages.push(response.message);
+    } else {
+      messages.push(...response.message);
+    }
+    response;
+    return messages;
   }
 
   responseHandler(res: any, context: ExecutionContext) {
     const ctx = context.switchToHttp();
     const request = ctx.getRequest();
-
+    console.log(res);
     return {
-      status: true,
       path: request.url,
-      response: res,
       success: true,
+      statusCode: res.statusCode || HttpStatus.OK,
+      result: res,
     };
   }
 }

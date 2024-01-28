@@ -18,7 +18,6 @@ export class RegisterUserDto {
   @IsNotEmpty({
     message: 'Username is required.',
   })
-  @IsString()
   username: string;
   @IsEmail(
     {

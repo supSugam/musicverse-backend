@@ -10,6 +10,7 @@ import * as path from 'path';
 import { ISendMailOptions, MailerService } from '@nestjs-modules/mailer';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+// import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class MailService {
   private readonly SENDER_EMAIL: string;
@@ -18,6 +19,7 @@ export class MailService {
   constructor(
     private readonly configService: ConfigService,
     private readonly mailerMain: MailerService
+    // private readonly prismaservice: PrismaService
   ) {
     this.SENDER_EMAIL = this.configService.get<string>('SENDER_EMAIL');
     this.logger.log(`Sender email: ${this.SENDER_EMAIL}`);
@@ -46,15 +48,22 @@ export class MailService {
     this.ACTIVE_OTPs.delete(email);
   }
 
+  // @Cron(CronExpression.EVERY_10_SECONDS)
+  // cleanExpiredOtps(): void {
+  //   // get all unverified users that are isVerified false and createdAt is greater than 24 hours
+  //   const allUnverifiedUsers = this.prismaservice.user.findMany({
+  //     where: {
+  //       isVerified: false,
+  //       createdAt: {
+  //         gt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+  //       },
+  //     },
+  //   });
+  // }
+
+  // delete user if user is not verified within 24 hours
   @Cron(CronExpression.EVERY_10_SECONDS)
-  cleanExpiredOtps(): void {
-    const now = Date.now();
-    this.ACTIVE_OTPs.forEach((value, key) => {
-      if (now - value.timestamp > 5 * 60 * 1000) {
-        this.ACTIVE_OTPs.delete(key);
-      }
-    });
-  }
+  removeUnverifiedUsers(): void {}
 
   generateRandomOtp(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
