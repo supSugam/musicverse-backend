@@ -44,6 +44,8 @@ model Genre {
   name        String   @unique
   description String?
   createdAt   DateTime @default(now())
+  popularity  Int      @default(0)
+  updatedAt   DateTime @updatedAt
   users       User[]
 }
 

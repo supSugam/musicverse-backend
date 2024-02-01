@@ -8,6 +8,8 @@ import { MailModule } from './mail/mail.module';
 import { ConfigModule } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
+import { GenreModule } from './genre/genre.module';
+import { RolesGuard } from './guards/roles.guard';
 @Module({
   imports: [
     PrismaModule,
@@ -37,6 +39,7 @@ import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
         },
       },
     }),
+    GenreModule,
   ],
   controllers: [AppController],
   providers: [AppService],

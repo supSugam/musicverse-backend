@@ -17,6 +17,8 @@ import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { UserEntity } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { AuthService } from 'src/auth/auth.service';
+import { UserRoles } from 'src/guards/roles.decorator';
+import { Role } from 'src/guards/roles.enum';
 
 @Controller('users')
 @ApiTags('users')
@@ -27,6 +29,7 @@ export class UsersController {
   ) {}
 
   @Get()
+  @UserRoles(Role.ADMIN)
   async findAll() {
     return await this.usersService.findAll();
   }
@@ -47,11 +50,13 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard)
   @ApiCreatedResponse({ type: UserEntity, description: 'Update a user by Id' })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   @ApiCreatedResponse({ description: 'Delete a user by Id' })
   remove(@Param('id') id: string) {
