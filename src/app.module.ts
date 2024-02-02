@@ -10,12 +10,14 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { GenreModule } from './genre/genre.module';
 import { RolesGuard } from './guards/roles.guard';
+import { PaginationModule } from './pagination/pagination.module';
 @Module({
   imports: [
     PrismaModule,
     UsersModule,
     AuthModule,
     MailModule,
+    PaginationModule,
     ConfigModule.forRoot({
       envFilePath: '.env',
       isGlobal: true,

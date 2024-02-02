@@ -21,14 +21,20 @@ export class GenreService {
   }
 
   findOne(id: string) {
-    return this.findOne(id);
+    return this.prisma.genre.findUnique({ where: { id } });
   }
 
-  update(id: number, updateGenreDto: UpdateGenreDto) {
-    return this.update(id, updateGenreDto);
+  update(id: string, updateGenreDto: UpdateGenreDto) {
+    return this.prisma.genre.update({
+      where: { id },
+      data: {
+        name: updateGenreDto.name,
+        description: updateGenreDto.description,
+      },
+    });
   }
 
-  remove(id: number) {
-    return this.remove(id);
+  remove(id: string) {
+    return this.prisma.genre.delete({ where: { id } });
   }
 }

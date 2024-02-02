@@ -16,10 +16,16 @@ import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { PaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
+import { PaginationDto } from 'src/pagination/dto/pagination.dto';
+import { PaginationService } from 'src/pagination/pagination.service';
 
 @Controller('genre')
 export class GenreController {
-  constructor(private readonly genreService: GenreService) {}
+  constructor(
+    private readonly genreService: GenreService,
+    private readonly paginationService: PaginationService
+  ) {}
   @UseGuards(AuthGuard, RolesGuard)
   @UserRoles(Role.ADMIN)
   @Post()
@@ -36,8 +42,16 @@ export class GenreController {
   }
 
   @Get()
-  findAll() {
-    return this.genreService.findAll();
+  async findAll(
+    @PaginationQueryParams(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
+    )
+    params: PaginationDto
+  ) {
+    return await this.paginationService.paginate({
+      modelName: 'genre',
+      ...params,
+    });
   }
 
   @Get(':id')
@@ -46,14 +60,16 @@ export class GenreController {
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard, RolesGuard)
   @UserRoles(Role.ADMIN)
   update(@Param('id') id: string, @Body() updateGenreDto: UpdateGenreDto) {
-    return this.genreService.update(+id, updateGenreDto);
+    return this.genreService.update(id, updateGenreDto);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard, RolesGuard)
   @UserRoles(Role.ADMIN)
   remove(@Param('id') id: string) {
-    return this.genreService.remove(+id);
+    return this.genreService.remove(id);
   }
 }

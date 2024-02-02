@@ -16,7 +16,11 @@ export class AuthGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
-      throw new UnauthorizedException();
+      const message = ['You are not authorized to access this resource'];
+      throw new UnauthorizedException(
+        { message, statusCode: 401, error: 'Unauthorized' },
+        'Unauthorized'
+      );
     }
 
     try {
@@ -26,8 +30,11 @@ export class AuthGuard implements CanActivate {
       // Assign the user information to the request
       request['user'] = payload;
     } catch {
-      console.log('catch');
-      throw new UnauthorizedException();
+      const message = ['You are not authorized to access this resource'];
+      throw new UnauthorizedException(
+        { message, statusCode: 401, error: 'Unauthorized' },
+        'Unauthorized'
+      );
     }
 
     return true;

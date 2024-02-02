@@ -26,6 +26,9 @@ model User {
   followers  Followers[] @relation("Following")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+  tracks     Track[]
+  playlists  Playlist[]
+
 }
 
 model Profile {
@@ -47,6 +50,7 @@ model Genre {
   popularity  Int      @default(0)
   updatedAt   DateTime @updatedAt
   users       User[]
+  tracks      Track[]
 }
 
 model Following {
@@ -63,4 +67,33 @@ model Followers {
   followingId String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Track {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  title       String
+  description String?
+  src         String
+  cover       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creator        User     @relation(fields: [creatorId], references: [id])
+  creatorId      String
+  genre       Genre    @relation(fields: [genreId], references: [id])
+  genreId     String
+  playlists   Playlist[]
+}
+
+
+model Playlist {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  title       String
+  description String?
+  cover       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creator        User     @relation(fields: [creatorId], references: [id])
+  creatorId      String
+  tracks      Track[]
+
 }
