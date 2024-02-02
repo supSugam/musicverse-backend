@@ -1,8 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateProfileDto {
   @ApiProperty()
+  @IsString({
+    message: 'Name must be a string.',
+  })
   name: string;
 
   @ApiProperty()

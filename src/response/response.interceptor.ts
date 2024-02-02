@@ -31,12 +31,15 @@ export class ResponseInterceptor implements NestInterceptor {
     const isPrismaClientKnownRequestError =
       exception instanceof Prisma.PrismaClientKnownRequestError;
     const isHttpException = exception instanceof HttpException;
+    const isError = exception instanceof Error;
 
     const status = isHttpException
       ? exception.getStatus()
       : isPrismaClientKnownRequestError
         ? HttpStatus.BAD_REQUEST
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : isError
+          ? HttpStatus.BAD_REQUEST
+          : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const statusCode = isHttpException
       ? exception.getStatus()
@@ -47,7 +50,7 @@ export class ResponseInterceptor implements NestInterceptor {
       statusCode: statusCode,
       message: isPrismaClientKnownRequestError
         ? this.extractPrismaErrorMessage(exception)
-        : isHttpException
+        : isHttpException || isError
           ? this.extractErrorMessage(exception)
           : 'Internal Server Error',
       ...(isPrismaClientKnownRequestError && {
@@ -71,15 +74,19 @@ export class ResponseInterceptor implements NestInterceptor {
     return [errMsg as string];
   }
 
-  private extractErrorMessage(error: HttpException): string[] {
-    const response = error.getResponse() as any;
+  private extractErrorMessage(error: HttpException | Error): string[] {
     let messages = [];
-    if (typeof response.message === 'string') {
-      messages.push(response.message);
+    if (error instanceof HttpException) {
+      const response = error.getResponse() as any;
+      if (typeof response.message === 'string') {
+        messages.push(response.message);
+      } else {
+        messages.push(...response.message);
+      }
+      response;
     } else {
-      messages.push(...response.message);
+      messages.push(error.message);
     }
-    response;
     return messages;
   }
 

@@ -31,7 +31,8 @@ const FirebaseProvider = {
 };
 
 @Module({
-  providers: [FirebaseService],
+  providers: [FirebaseService, FirebaseProvider],
+  exports: [FirebaseService],
   imports: [PrismaModule],
 })
 export class FirebaseModule {}
