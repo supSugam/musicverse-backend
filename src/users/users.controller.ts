@@ -49,11 +49,11 @@ export class UsersController {
     return this.usersService.findOneById(id);
   }
 
-  @Patch(':id')
+  @Patch()
   @UseGuards(AuthGuard)
   @ApiCreatedResponse({ type: UserEntity, description: 'Update a user by Id' })
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  update(@Request() req, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(req['user'].id, updateUserDto);
   }
 
   @UseGuards(AuthGuard)

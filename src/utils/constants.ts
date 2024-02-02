@@ -9,3 +9,8 @@ export const MAIL_PASS = process.env.MAIL_PASS;
 
 export const JWT_SECRET = process.env.JWT_SECRET;
 export const SERVER_PORT = parseInt(process.env.SERVER_PORT);
+
+export const FIREBASE_STORAGE_DIRS = {
+  USER_AVATAR: (userId: string) => `user/${userId}/avatar`,
+  USER_COVER: (userId: string) => `user/${userId}/cover`,
+};

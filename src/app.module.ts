@@ -11,6 +11,7 @@ import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { GenreModule } from './genre/genre.module';
 import { RolesGuard } from './guards/roles.guard';
 import { PaginationModule } from './pagination/pagination.module';
+import { ProfileModule } from './profile/profile.module';
 @Module({
   imports: [
     PrismaModule,
@@ -42,6 +43,7 @@ import { PaginationModule } from './pagination/pagination.module';
       },
     }),
     GenreModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],
