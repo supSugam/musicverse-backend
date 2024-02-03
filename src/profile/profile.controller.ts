@@ -5,19 +5,17 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   UseGuards,
   ValidationPipe,
   Request,
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
-  BadRequestException,
+  Delete,
   ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
-  ParseFilePipeBuilder,
   HttpStatus,
+  MaxFileSizeValidator,
+  ParseFilePipeBuilder,
 } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
@@ -27,12 +25,10 @@ import { PaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
 import { PaginationDto } from 'src/pagination/dto/pagination.dto';
 import { PaginationService } from 'src/pagination/pagination.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-  FilesInterceptor,
-} from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { FIREBASE_STORAGE_DIRS } from 'src/utils/constants';
+import { ApiConsumes } from '@nestjs/swagger';
+import { IsValidFile } from 'src/utils/helpers/Files';
 
 @Controller('profile')
 export class ProfileController {
@@ -112,73 +108,31 @@ export class ProfileController {
 
   @Patch()
   @UseGuards(AuthGuard)
+  @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'avatar', maxCount: 1 },
       { name: 'cover', maxCount: 1 },
     ])
   )
-  async update(
-    @Request() req,
-    @Body(new ValidationPipe({ transform: true, whitelist: true }))
-    updateProfileDto: UpdateProfileDto,
-    @UploadedFiles(
-      new ParseFilePipeBuilder()
-        .addFileTypeValidator({
-          fileType: 'image',
-        })
-        .addMaxSizeValidator({
-          maxSize: 2 * 1024 * 1024,
-          message: 'File size exceeds 2MB',
-        })
-        .build({
-          fileIsRequired: false,
-          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-        })
-    )
-    files: { avatar?: Express.Multer.File; cover?: Express.Multer.File }
+  uploadFile(
+    @UploadedFiles()
+    files: {
+      avatar?: Express.Multer.File[];
+      cover?: Express.Multer.File[];
+    }
   ) {
-    const userId = req.user.id;
-
-    const { name, bio } = updateProfileDto;
-    const avatarFile = files['avatar'];
-    const coverFile = files['cover'];
-    console.log('avatarFile', avatarFile);
-    console.log('coverFile', coverFile);
-
-    const payload = {
-      ...(name && { name: name }),
-      ...(bio && { bio: bio }),
-    };
-
-    // FIXME: Fix yar
-
-    if (avatarFile) {
-      const avatarUrl = await this.firebaseService.uploadFile({
-        directory: FIREBASE_STORAGE_DIRS.USER_AVATAR(userId),
-        fileName: userId,
-        fileBuffer: avatarFile.buffer,
-        originalFilename: avatarFile.originalname,
-        fileType: 'image',
+    const avatar = files.avatar[0];
+    // const [cover] = files.cover;
+    console.log(avatar);
+    if (avatar) {
+      IsValidFile({
+        file: avatar,
+        maxSize: 2 * 1024 * 1024,
+        allowedExtensions: ['jpg', 'jpeg', 'png'],
+        allowedTypes: ['image/jpeg', 'image/png', 'image/jpg'],
       });
-      payload['avatar'] = avatarUrl;
     }
-    if (coverFile) {
-      const coverUrl = await this.firebaseService.uploadFile({
-        directory: FIREBASE_STORAGE_DIRS.USER_COVER(userId),
-        fileName: userId,
-        fileBuffer: coverFile.buffer,
-        originalFilename: coverFile.originalname,
-        fileType: 'image',
-      });
-      payload['cover'] = coverUrl;
-    }
-    console.log('payload', payload);
-    if (Object.keys(payload).length === 0) {
-      throw new BadRequestException('No valid data found for update.');
-    }
-
-    return await this.profileService.update(userId, payload);
   }
 
   @Delete()

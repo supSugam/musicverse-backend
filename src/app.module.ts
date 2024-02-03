@@ -12,6 +12,7 @@ import { GenreModule } from './genre/genre.module';
 import { RolesGuard } from './guards/roles.guard';
 import { PaginationModule } from './pagination/pagination.module';
 import { ProfileModule } from './profile/profile.module';
+import { MulterModule } from '@nestjs/platform-express';
 @Module({
   imports: [
     PrismaModule,
@@ -44,6 +45,9 @@ import { ProfileModule } from './profile/profile.module';
     }),
     GenreModule,
     ProfileModule,
+    MulterModule.register({
+      dest: './uploads',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
