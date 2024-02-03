@@ -30,9 +30,9 @@ export class ProfileService {
     return `This action returns a #${id} profile`;
   }
 
-  async update(id: string, updateProfileDto: IUpdateProfile) {
+  async update(userId: string, updateProfileDto: IUpdateProfile) {
     return await this.prisma.profile.update({
-      where: { id },
+      where: { userId },
       data: updateProfileDto,
     });
   }

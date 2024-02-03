@@ -20,6 +20,7 @@ const FirebaseProvider = {
       auth_provider_x509_cert_url: configService.get<string>('AUTH_CERT_URL'),
       client_x509_cert_url: configService.get<string>('CLIENT_CERT_URL'),
       universe_domain: configService.get<string>('UNIVERSAL_DOMAIN'),
+      projectId: configService.get<string>('PROJECT_ID'),
     } as FirebaseAdmin.ServiceAccount;
 
     return FirebaseAdmin.initializeApp({

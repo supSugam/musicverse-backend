@@ -14,3 +14,6 @@ export const FIREBASE_STORAGE_DIRS = {
   USER_AVATAR: (userId: string) => `user/${userId}/avatar`,
   USER_COVER: (userId: string) => `user/${userId}/cover`,
 };
+
+export const ALLOWED_IMAGE_MIMETYPES = ['image/png', 'image/jpg', 'image/jpeg'];
+export const ALLOWED_AUDIO_MIMETYPES = ['audio/wav', 'audio/mpeg', 'audio/mp3'];

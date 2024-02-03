@@ -26,9 +26,12 @@ import { PaginationDto } from 'src/pagination/dto/pagination.dto';
 import { PaginationService } from 'src/pagination/pagination.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { FIREBASE_STORAGE_DIRS } from 'src/utils/constants';
+import {
+  ALLOWED_IMAGE_MIMETYPES,
+  FIREBASE_STORAGE_DIRS,
+} from 'src/utils/constants';
 import { ApiConsumes } from '@nestjs/swagger';
-import { IsValidFile } from 'src/utils/helpers/Files';
+import { CustomUploadFileValidator } from 'src/app.validator';
 
 @Controller('profile')
 export class ProfileController {
@@ -40,8 +43,7 @@ export class ProfileController {
 
   @Post()
   @UseGuards(AuthGuard)
-  @Post()
-  @UseGuards(AuthGuard)
+  @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'avatar', maxCount: 1 },
@@ -52,40 +54,52 @@ export class ProfileController {
     @Request() req,
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     createProfileDto: CreateProfileDto,
-    @UploadedFiles() files: Express.Multer.File[]
+    @UploadedFiles(
+      new ParseFilePipeBuilder()
+        .addValidator(
+          new CustomUploadFileValidator({
+            fileTypes: ALLOWED_IMAGE_MIMETYPES,
+            maxFileSize: 1024 * 1024 * 2,
+          })
+        )
+        .build({
+          fileIsRequired: false,
+          errorHttpStatusCode: HttpStatus.BAD_REQUEST,
+        })
+    )
+    files: {
+      avatar?: Express.Multer.File[];
+      cover?: Express.Multer.File[];
+    }
   ) {
     const userId = req.user.id;
-
     const payload = {
+      ...createProfileDto,
       userId,
-      name: createProfileDto.name,
     };
-
-    if (files && files.length > 0) {
-      for (const file of files) {
-        if (file.fieldname === 'avatar') {
-          const avatarUrl = await this.firebaseService.uploadFile({
-            directory: FIREBASE_STORAGE_DIRS.USER_AVATAR(userId),
-            fileName: userId,
-            fileBuffer: file.buffer,
-            originalFilename: file.originalname,
-            fileType: 'image',
-          });
-          payload['avatar'] = avatarUrl;
-        } else if (file.fieldname === 'cover') {
-          const coverUrl = await this.firebaseService.uploadFile({
-            directory: FIREBASE_STORAGE_DIRS.USER_COVER(userId),
-            fileName: userId,
-            fileBuffer: file.buffer,
-            originalFilename: file.originalname,
-            fileType: 'image',
-          });
-          payload['cover'] = coverUrl;
-        }
-      }
+    const avatar = files?.avatar?.[0];
+    if (avatar) {
+      const avatarUrl = await this.firebaseService.uploadFile({
+        directory: FIREBASE_STORAGE_DIRS.USER_AVATAR(userId),
+        fileName: userId,
+        fileBuffer: avatar.buffer,
+        originalFilename: avatar.originalname,
+        fileType: 'image',
+      });
+      payload['avatar'] = avatarUrl;
     }
-
-    return await this.profileService.create(payload);
+    const cover = files?.cover?.[0];
+    if (cover) {
+      const coverUrl = await this.firebaseService.uploadFile({
+        directory: FIREBASE_STORAGE_DIRS.USER_COVER(userId),
+        fileName: userId,
+        fileBuffer: cover.buffer,
+        originalFilename: cover.originalname,
+        fileType: 'image',
+      });
+      payload['cover'] = coverUrl;
+    }
+    return this.profileService.create(payload);
   }
 
   @Get()
@@ -115,24 +129,59 @@ export class ProfileController {
       { name: 'cover', maxCount: 1 },
     ])
   )
-  uploadFile(
-    @UploadedFiles()
+  async update(
+    @Request() req,
+    @Body(new ValidationPipe({ transform: true, whitelist: true }))
+    updateProfileDto: UpdateProfileDto,
+    @UploadedFiles(
+      new ParseFilePipeBuilder()
+        .addValidator(
+          new CustomUploadFileValidator({
+            fileTypes: ALLOWED_IMAGE_MIMETYPES,
+            maxFileSize: 1024 * 1024 * 2,
+          })
+        )
+        .build({
+          fileIsRequired: false,
+          errorHttpStatusCode: HttpStatus.BAD_REQUEST,
+        })
+    )
     files: {
       avatar?: Express.Multer.File[];
       cover?: Express.Multer.File[];
     }
   ) {
-    const avatar = files.avatar[0];
-    // const [cover] = files.cover;
-    console.log(avatar);
+    const userId = req.user.id;
+    const payload = {
+      ...(updateProfileDto.name && { name: updateProfileDto.name }),
+      ...(updateProfileDto.bio && { bio: updateProfileDto.bio }),
+    };
+    const avatar = files?.avatar?.[0];
     if (avatar) {
-      IsValidFile({
-        file: avatar,
-        maxSize: 2 * 1024 * 1024,
-        allowedExtensions: ['jpg', 'jpeg', 'png'],
-        allowedTypes: ['image/jpeg', 'image/png', 'image/jpg'],
+      const avatarUrl = await this.firebaseService.uploadFile({
+        directory: FIREBASE_STORAGE_DIRS.USER_AVATAR(userId),
+        fileName: userId,
+        fileBuffer: avatar.buffer,
+        originalFilename: avatar.originalname,
+        fileType: 'image',
       });
+      payload['avatar'] = avatarUrl;
     }
+    const cover = files?.cover?.[0];
+    if (cover) {
+      const coverUrl = await this.firebaseService.uploadFile({
+        directory: FIREBASE_STORAGE_DIRS.USER_COVER(userId),
+        fileName: userId,
+        fileBuffer: cover.buffer,
+        originalFilename: cover.originalname,
+        fileType: 'image',
+      });
+      payload['cover'] = coverUrl;
+    }
+    if (Object.keys(payload).length === 0) {
+      return { message: 'No changes detected.' };
+    }
+    return this.profileService.update(userId, payload);
   }
 
   @Delete()
