@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -9,6 +9,7 @@ export class ProfileService {
   constructor(private prisma: PrismaService) {}
 
   async create(createProfileDto: ICreateProfile) {
+    console.log(createProfileDto);
     return await this.prisma.profile.create({
       data: {
         name: createProfileDto.name,
@@ -26,8 +27,16 @@ export class ProfileService {
     return `This action returns all profile`;
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} profile`;
+  async findOne(userId: string) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId } });
+    console.log(profile);
+    if (!profile) {
+      throw new HttpException(
+        'No Profile Created for this user.',
+        HttpStatus.NOT_FOUND
+      );
+    }
+    return profile;
   }
 
   async update(userId: string, updateProfileDto: IUpdateProfile) {

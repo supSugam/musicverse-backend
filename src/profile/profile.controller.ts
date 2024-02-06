@@ -99,7 +99,7 @@ export class ProfileController {
       });
       payload['cover'] = coverUrl;
     }
-    return this.profileService.create(payload);
+    return await this.profileService.create(payload);
   }
 
   @Get()
@@ -113,6 +113,12 @@ export class ProfileController {
       modelName: 'profile',
       ...params,
     });
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  async findMe(@Request() req) {
+    return await this.profileService.findOne(req.user.id);
   }
 
   @Get(':id')

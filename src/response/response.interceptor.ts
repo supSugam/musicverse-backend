@@ -22,7 +22,7 @@ export class ResponseInterceptor implements NestInterceptor {
   }
 
   errorHandler(
-    exception: HttpException | Prisma.PrismaClientKnownRequestError,
+    exception: HttpException | Prisma.PrismaClientKnownRequestError | Error,
     context: ExecutionContext
   ) {
     const ctx = context.switchToHttp();
@@ -76,17 +76,28 @@ export class ResponseInterceptor implements NestInterceptor {
 
   private extractErrorMessage(error: HttpException | Error): string[] {
     let messages = [];
+
     if (error instanceof HttpException) {
       const response = error.getResponse() as any;
-      if (typeof response.message === 'string') {
-        messages.push(response.message);
+
+      if (response) {
+        if (response.message) {
+          if (typeof response.message === 'string') {
+            messages.push(response.message);
+          } else if (Array.isArray(response.message)) {
+            messages.push(...response.message);
+          }
+        }
+        if (typeof response === 'string') {
+          messages.push(response);
+        }
       } else {
-        messages.push(...response.message);
+        messages.push('No error message available');
       }
-      response;
     } else {
       messages.push(error.message);
     }
+
     return messages;
   }
 
