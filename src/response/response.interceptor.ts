@@ -47,7 +47,7 @@ export class ResponseInterceptor implements NestInterceptor {
 
     response.status(status).json({
       path: request.url,
-      statusCode: statusCode,
+      statusCode,
       message: isPrismaClientKnownRequestError
         ? this.extractPrismaErrorMessage(exception)
         : isHttpException || isError
