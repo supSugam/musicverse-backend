@@ -13,6 +13,9 @@ import { RolesGuard } from './guards/roles.guard';
 import { PaginationModule } from './pagination/pagination.module';
 import { ProfileModule } from './profile/profile.module';
 import { MulterModule } from '@nestjs/platform-express';
+import { TracksModule } from './tracks/tracks.module';
+import { AlbumsModule } from './albums/albums.module';
+import { TagsModule } from './tags/tags.module';
 @Module({
   imports: [
     PrismaModule,
@@ -48,6 +51,9 @@ import { MulterModule } from '@nestjs/platform-express';
     MulterModule.register({
       dest: './uploads',
     }),
+    TracksModule,
+    AlbumsModule,
+    TagsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -82,6 +82,7 @@ model Track {
   src             String
   preview         String?
   cover           String?
+  lyrics          String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   creator         User           @relation(fields: [creatorId], references: [id])
@@ -92,6 +93,7 @@ model Track {
   albums          Album[]        // Albums containing this track
   likes           Int            @default(0) // Number of users who liked this track
   likedBy         User[]         @relation("LikedTracks")
+  tags            Tag[]
 }
 
 model Playlist {
@@ -105,7 +107,9 @@ model Playlist {
   creatorId       String
   tracks          Track[]        // Tracks in this playlist
   savedBy         User[]         @relation("SavedPlaylists")
+  saves           Int            @default(0) // Number of users who saved this playlist
   isPublic        Boolean        @default(true)
+  tags            Tag[]
 }
 
 model Album {
@@ -119,6 +123,18 @@ model Album {
   creatorId       String
   tracks          Track[]        // Tracks in this album
   savedBy         User[]         @relation("SavedAlbums")
+  saves           Int            @default(0) // Number of users who saved this album
+  tags            Tag[]
+}
+
+model Tag {
+  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  name            String         @unique
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  tracks          Track[]
+  playlists       Playlist[]
+  albums          Album[]
 }
 
 model Membership {
