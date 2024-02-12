@@ -49,7 +49,7 @@ export class TagsController {
     params: PaginationDto
   ) {
     return await this.paginationService.paginate({
-      modelName: 'tags',
+      modelName: 'tag',
       ...params,
     });
   }
