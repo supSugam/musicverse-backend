@@ -1,0 +1,6 @@
+export enum ReviewStatus {
+  REQUESTED = 'REQUESTED',
+  NOT_REQUESTED = 'NOT_REQUESTED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}

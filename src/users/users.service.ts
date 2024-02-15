@@ -74,6 +74,7 @@ export class UsersService {
       ...(username && { username }),
       ...(email && { email }),
       ...(user_role && { role: user_role }),
+      // isVerified: true, // TODO: Remove this line
     };
 
     if (genreIds && genreIds.length > 0) {

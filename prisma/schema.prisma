@@ -13,6 +13,13 @@ enum UserRole {
   ARTIST
   ADMIN
 }
+enum ReviewStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  NOT_REQUESTED
+}
+
 
 model User {
   id              String         @id @default(dbgenerated("gen_random_uuid()"))
@@ -21,6 +28,7 @@ model User {
   password        String
   role            UserRole?      @default(USER)
   isVerified      Boolean        @default(false)
+  artistRequestStatus ReviewStatus? @default(NOT_REQUESTED)
   genres          Genre[]
   profile         Profile?
   following       Following[]    @relation("Follower")
@@ -53,7 +61,6 @@ model Genre {
   name            String         @unique
   description     String?
   createdAt       DateTime       @default(now())
-  popularity      Int            @default(0)
   updatedAt       DateTime       @updatedAt
   users           User[]
   tracks          Track[]
@@ -83,6 +90,7 @@ model Track {
   preview         String?
   cover           String?
   lyrics          String?
+  publicStatus    ReviewStatus?  @default(NOT_REQUESTED)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   creator         User           @relation(fields: [creatorId], references: [id])
@@ -91,7 +99,6 @@ model Track {
   genreId         String
   playlists       Playlist[]     // Playlists containing this track
   albums          Album[]        // Albums containing this track
-  likes           Int            @default(0) // Number of users who liked this track
   likedBy         User[]         @relation("LikedTracks")
   tags            Tag[]
 }

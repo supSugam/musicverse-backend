@@ -16,4 +16,9 @@ export const FIREBASE_STORAGE_DIRS = {
 };
 
 export const ALLOWED_IMAGE_MIMETYPES = ['image/png', 'image/jpg', 'image/jpeg'];
-export const ALLOWED_AUDIO_MIMETYPES = ['audio/wav', 'audio/mpeg', 'audio/mp3'];
+export const ALLOWED_AUDIO_MIMETYPES = [
+  'audio/wav',
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/x-wav',
+];
