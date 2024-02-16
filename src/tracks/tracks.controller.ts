@@ -149,10 +149,70 @@ export class TracksController {
   //   return await this.tracksService.findOne(id);
   // }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateTrackDto: UpdateTrackDto) {
-  //   return await this.tracksService.update(id, updateTrackDto);
-  // }
+  @Patch(':id')
+  @UseGuards(AuthGuard)
+  @ApiConsumes('multipart/form-data')
+  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'cover', maxCount: 1 }]))
+  async update(
+    @Request() req,
+    @Param('id') id: string,
+    @Body(new ValidationPipe({ transform: true, whitelist: true }))
+    updateTrackDto: UpdateTrackDto,
+    @UploadedFiles(
+      new ParseFilePipeBuilder()
+        .addValidator(
+          new CustomUploadFileValidator({
+            src: {
+              fileTypes: ALLOWED_AUDIO_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 200,
+            },
+            cover: {
+              fileTypes: ALLOWED_IMAGE_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 2,
+            },
+            preview: {
+              fileTypes: ALLOWED_AUDIO_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 20,
+            },
+          })
+        )
+        .build({
+          fileIsRequired: false,
+          errorHttpStatusCode: HttpStatus.BAD_REQUEST,
+        })
+    )
+    files: {
+      cover?: Express.Multer.File[];
+    }
+  ) {
+    const creatorId = req.user.id as string;
+    const isTrackOwner = await this.tracksService.isTrackOwner(id, creatorId);
+
+    if (!isTrackOwner) {
+      throw new BadRequestException({
+        message: ['You are not the owner of this track'],
+      });
+    }
+    const payload = {
+      ...updateTrackDto,
+    };
+    const {
+      cover: [coverFile],
+    } = files;
+    if (coverFile) {
+      const coverUrl = await this.firebaseService.uploadFile({
+        directory: FIREBASE_STORAGE_DIRS.TRACK_COVER(id),
+        fileName: id,
+        fileBuffer: coverFile.buffer,
+        originalFilename: coverFile.originalname,
+        fileType: 'image',
+      });
+      payload['cover'] = coverUrl;
+    }
+
+    return await this.tracksService.update(id, payload);
+  }
 
   // @Delete(':id')
   // remove(@Param('id') id: string) {

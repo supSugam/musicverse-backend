@@ -53,4 +53,12 @@ export class TracksService {
       },
     });
   }
+
+  async isTrackOwner(trackId: string, userId: string) {
+    const track = await this.prisma.track.findUnique({
+      where: { id: trackId },
+      select: { creatorId: true },
+    });
+    return track.creatorId === userId;
+  }
 }
