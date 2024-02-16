@@ -101,7 +101,7 @@ export class FirebaseService {
 
     const metadata = { fileName, originalFilename, baseFileName, fileType };
 
-    return this.uploadChunkedFile({
+    return await this.uploadChunkedFile({
       destinationPath: `${directory}/${fileName}.${extension}`,
       fileBuffer,
       contentType: contentType || '',

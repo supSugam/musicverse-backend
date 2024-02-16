@@ -82,49 +82,80 @@ export class TracksController {
       preview?: Express.Multer.File[];
     }
   ) {
-    const { src, cover, preview } = files;
+    const {
+      src: [srcFile],
+      cover: [coverFile],
+      preview: [previewFile],
+    } = files;
     const payload = {
       ...createTrackDto,
       creatorId: req.user.id as string,
       src: '',
     };
-    if (!src) {
+    if (!srcFile) {
       throw new BadRequestException({
         message: ['src is required'],
       });
     }
 
-    const track = await this.tracksService.create(payload);
+    const { id: trackId } = await this.tracksService.create(payload);
 
-    const avatarUrl = await this.firebaseService.uploadFile({
-      directory: FIREBASE_STORAGE_DIRS.USER_AVATAR(userId),
-      fileName: userId,
-      fileBuffer: avatar.buffer,
-      originalFilename: avatar.originalname,
-      fileType: 'image',
-    });
-    payload['avatar'] = avatarUrl;
-    // console.log(createTrackDto, 'createTrackDto');
-    return 'TODO: create track';
+    const uploaded = {};
+    try {
+      const trackUrl = await this.firebaseService.uploadFile({
+        directory: FIREBASE_STORAGE_DIRS.TRACK_SRC(trackId),
+        fileName: trackId,
+        fileBuffer: srcFile.buffer,
+        originalFilename: srcFile.originalname,
+        fileType: 'audio',
+      });
+      uploaded['src'] = trackUrl;
+
+      if (coverFile) {
+        const coverUrl = await this.firebaseService.uploadFile({
+          directory: FIREBASE_STORAGE_DIRS.TRACK_COVER(trackId),
+          fileName: trackId,
+          fileBuffer: coverFile.buffer,
+          originalFilename: coverFile.originalname,
+          fileType: 'image',
+        });
+        uploaded['cover'] = coverUrl;
+      }
+
+      if (previewFile) {
+        const previewUrl = await this.firebaseService.uploadFile({
+          directory: FIREBASE_STORAGE_DIRS.TRACK_PREVIEW(trackId),
+          fileName: trackId,
+          fileBuffer: previewFile.buffer,
+          originalFilename: previewFile.originalname,
+          fileType: 'audio',
+        });
+        uploaded['preview'] = previewUrl;
+      }
+    } catch (error) {
+      console.log(error);
+    }
+
+    return await this.tracksService.update(trackId, uploaded);
   }
 
   @Get()
   findAll() {
-    return this.tracksService.findAll();
+    // return this.tracksService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tracksService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return await this.tracksService.findOne(id);
+  // }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTrackDto: UpdateTrackDto) {
-    return this.tracksService.update(+id, updateTrackDto);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateTrackDto: UpdateTrackDto) {
+  //   return await this.tracksService.update(id, updateTrackDto);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tracksService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return await this.tracksService.remove(id);
+  // }
 }

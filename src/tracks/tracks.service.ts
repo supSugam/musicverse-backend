@@ -8,14 +8,30 @@ export class TracksService {
   constructor(private prisma: PrismaService) {}
 
   async create(createTrackDto: CreateTrackPayload) {
-    this.prisma.track.create({
+    return await this.prisma.track.create({
       data: {
-        ...createTrackDto,
+        title: createTrackDto.title,
+        description: createTrackDto.description,
+        src: createTrackDto.src,
+        preview: createTrackDto.preview,
+        cover: createTrackDto.cover,
+        lyrics: createTrackDto.lyrics,
+        publicStatus: createTrackDto.publicStatus,
         creator: {
           connect: {
             id: createTrackDto.creatorId,
           },
         },
+        genre: {
+          connect: {
+            id: createTrackDto.genreId,
+          },
+        },
+        tags: {
+          connect: createTrackDto.tags?.map((tagId) => ({ id: tagId })),
+        },
+
+        // Optionally, you can handle other fields like playlists, albums, etc.
       },
     });
   }
@@ -24,15 +40,17 @@ export class TracksService {
     return `This action returns all tracks`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} track`;
-  }
-
-  update(id: number, updateTrackDto: UpdateTrackDto) {
-    return `This action updates a #${id} track`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} track`;
+  async update(id: string, updateTrackpayload: UpdateTrackDto) {
+    return await this.prisma.track.update({
+      where: { id },
+      data: {
+        ...updateTrackpayload,
+        ...(updateTrackpayload.tags && {
+          tags: {
+            set: updateTrackpayload.tags.map((tagId) => ({ id: tagId })),
+          },
+        }),
+      },
+    });
   }
 }
