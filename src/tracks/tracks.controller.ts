@@ -14,6 +14,7 @@ import {
   ParseFilePipeBuilder,
   HttpStatus,
   BadRequestException,
+  Response,
 } from '@nestjs/common';
 import { TracksService } from './tracks.service';
 import { CreateTrackDto, CreateTrackPayload } from './dto/create-track.dto';
@@ -30,6 +31,7 @@ import { CustomUploadFileValidator } from 'src/app.validator';
 import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { RolesGuard } from 'src/guards/roles.guard';
 
 @Controller('tracks')
 export class TracksController {
@@ -82,11 +84,11 @@ export class TracksController {
       preview?: Express.Multer.File[];
     }
   ) {
-    const {
-      src: [srcFile],
-      cover: [coverFile],
-      preview: [previewFile],
-    } = files;
+    console.log(files, 'files');
+
+    const srcFile = files?.src?.[0];
+    const coverFile = files?.cover?.[0];
+    const previewFile = files?.preview?.[0];
     const payload = {
       ...createTrackDto,
       creatorId: req.user.id as string,
@@ -134,6 +136,8 @@ export class TracksController {
       }
     } catch (error) {
       console.log(error);
+      await this.tracksService.remove(trackId);
+      throw error;
     }
 
     return await this.tracksService.update(trackId, uploaded);
@@ -214,8 +218,27 @@ export class TracksController {
     return await this.tracksService.update(id, payload);
   }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return await this.tracksService.remove(id);
-  // }
+  @Delete(':id')
+  @UseGuards(AuthGuard)
+  async remove(@Request() req, @Param('id') id: string) {
+    const creatorId = req.user.id as string;
+    console.log(creatorId, 'creatorId');
+    const isTrackOwner = await this.tracksService.isTrackOwner(id, creatorId);
+    const canDelete = req.user.role === Role.ADMIN || isTrackOwner;
+    if (!canDelete) {
+      throw new BadRequestException({
+        message: ['You are not the owner of this track'],
+      });
+    }
+    await this.tracksService.remove(id);
+    return { message: ['Track deleted successfully'] };
+  }
+
+  @Delete()
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ADMIN)
+  async removeAll() {
+    await this.tracksService.removeAll();
+    return { message: ['All tracks deleted successfully'] };
+  }
 }

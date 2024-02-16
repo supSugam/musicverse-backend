@@ -1,11 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateTrackDto, CreateTrackPayload } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Injectable()
 export class TracksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private firebaseService: FirebaseService
+  ) {}
 
   async create(createTrackDto: CreateTrackPayload) {
     return await this.prisma.track.create({
@@ -30,8 +34,6 @@ export class TracksService {
         tags: {
           connect: createTrackDto.tags?.map((tagId) => ({ id: tagId })),
         },
-
-        // Optionally, you can handle other fields like playlists, albums, etc.
       },
     });
   }
@@ -59,6 +61,24 @@ export class TracksService {
       where: { id: trackId },
       select: { creatorId: true },
     });
-    return track.creatorId === userId;
+    if (!track) throw new BadRequestException({ message: 'Track not found' });
+
+    return track && track.creatorId === userId;
+  }
+
+  async remove(id: string) {
+    try {
+      await this.prisma.track.delete({
+        where: { id },
+      });
+      await this.firebaseService.deleteDirectory({ directory: `track/${id}` });
+    } catch (error) {
+      throw new BadRequestException({ message: 'Track not found' });
+    }
+  }
+
+  async removeAll() {
+    await this.prisma.track.deleteMany({});
+    await this.firebaseService.deleteDirectory({ directory: '/track' });
   }
 }
