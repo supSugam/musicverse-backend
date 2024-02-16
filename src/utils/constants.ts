@@ -1,3 +1,5 @@
+import { Role } from 'src/guards/roles.enum';
+
 export const DATABASE_URL = process.env.DATABASE_URL;
 
 export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
@@ -22,3 +24,11 @@ export const ALLOWED_AUDIO_MIMETYPES = [
   'audio/mp3',
   'audio/x-wav',
 ];
+
+export const USER_LIMITS = {
+  getMaxTrackSize: (role: Role) =>
+    role === Role.ARTIST || role === Role.MEMBER
+      ? 200 * 1024 * 1024
+      : 20 * 1024 * 1024,
+  MAX_TRACKS_PER_ALBUM: 10,
+};

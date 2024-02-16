@@ -25,6 +25,8 @@ import {
   ALLOWED_IMAGE_MIMETYPES,
 } from 'src/utils/constants';
 import { CustomUploadFileValidator } from 'src/app.validator';
+import { UserRoles } from 'src/guards/roles.decorator';
+import { Role } from 'src/guards/roles.enum';
 
 @Controller('tracks')
 export class TracksController {
@@ -32,6 +34,9 @@ export class TracksController {
 
   @Post()
   @UseGuards(AuthGuard)
+  @ApiConsumes('multipart/form-data')
+  // @UserRoles(...Object.values(Role).filter((role) => role !== Role.ADMIN))
+  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'src', maxCount: 1 },
@@ -40,7 +45,7 @@ export class TracksController {
     ])
   )
   async create(
-    @Request() req,
+    @Request() req: Request,
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     createTrackDto: CreateTrackDto,
     @UploadedFiles(
@@ -68,8 +73,9 @@ export class TracksController {
       preview?: Express.Multer.File[];
     }
   ) {
-    const { user } = req;
-    // TODO: streams/chunks upload
+    console.log(files, 'files');
+    console.log(createTrackDto, 'createTrackDto');
+    return 'TODO: create track';
   }
 
   @Get()
