@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateTrackDto } from './dto/create-track.dto';
+import { CreateTrackDto, CreateTrackPayload } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -7,8 +7,17 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class TracksService {
   constructor(private prisma: PrismaService) {}
 
-  create(createTrackDto: CreateTrackDto) {
-    return 'This action adds a new track';
+  async create(createTrackDto: CreateTrackPayload) {
+    this.prisma.track.create({
+      data: {
+        ...createTrackDto,
+        creator: {
+          connect: {
+            id: createTrackDto.creatorId,
+          },
+        },
+      },
+    });
   }
 
   findAll() {

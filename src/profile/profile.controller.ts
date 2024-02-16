@@ -58,8 +58,14 @@ export class ProfileController {
       new ParseFilePipeBuilder()
         .addValidator(
           new CustomUploadFileValidator({
-            fileTypes: ALLOWED_IMAGE_MIMETYPES,
-            maxFileSize: 1024 * 1024 * 2,
+            avatar: {
+              fileTypes: ALLOWED_IMAGE_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 2,
+            },
+            cover: {
+              fileTypes: ALLOWED_IMAGE_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 2,
+            },
           })
         )
         .build({
@@ -143,8 +149,14 @@ export class ProfileController {
       new ParseFilePipeBuilder()
         .addValidator(
           new CustomUploadFileValidator({
-            fileTypes: ALLOWED_IMAGE_MIMETYPES,
-            maxFileSize: 1024 * 1024 * 2,
+            avatar: {
+              fileTypes: ALLOWED_IMAGE_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 2,
+            },
+            cover: {
+              fileTypes: ALLOWED_IMAGE_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 2,
+            },
           })
         )
         .build({

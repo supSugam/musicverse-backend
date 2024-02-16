@@ -11,16 +11,23 @@ import { AuthService } from './auth.service';
 export class AuthGuard implements CanActivate {
   constructor(private readonly authService: AuthService) {}
 
+  throwUnauthorized() {
+    const message = ['You are not authorized to access this resource'];
+    throw new UnauthorizedException(
+      { message, statusCode: 401, error: 'Unauthorized' },
+      'Unauthorized'
+    );
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 
+    // print request as formatted JSON
+    console.log(request.body, 'request');
+
     if (!token) {
-      const message = ['You are not authorized to access this resource'];
-      throw new UnauthorizedException(
-        { message, statusCode: 401, error: 'Unauthorized' },
-        'Unauthorized'
-      );
+      this.throwUnauthorized();
     }
 
     try {
@@ -29,11 +36,7 @@ export class AuthGuard implements CanActivate {
       // Assign the user information to the request
       request['user'] = payload;
     } catch {
-      const message = ['You are not authorized to access this resource'];
-      throw new UnauthorizedException(
-        { message, statusCode: 401, error: 'Unauthorized' },
-        'Unauthorized'
-      );
+      this.throwUnauthorized();
     }
 
     return true;

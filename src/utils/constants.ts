@@ -15,6 +15,15 @@ export const SERVER_PORT = parseInt(process.env.SERVER_PORT);
 export const FIREBASE_STORAGE_DIRS = {
   USER_AVATAR: (userId: string) => `user/${userId}/avatar`,
   USER_COVER: (userId: string) => `user/${userId}/cover`,
+  TRACK_COVER: (trackId: string) => `track/${trackId}/cover`,
+  TRACK_SRC: (trackId: string) => `track/${trackId}/src`,
+  TRACK_PREVIEW: (trackId: string) => `track/${trackId}/preview`,
+  ALBUM_COVER: (albumId: string) => `album/${albumId}/cover`,
+  ALBUM_SRC: (albumId: string) => `album/${albumId}/src`,
+  ALBUM_PREVIEW: (albumId: string) => `album/${albumId}/preview`,
+  PLAYLIST_COVER: (playlistId: string) => `playlist/${playlistId}/cover`,
+  PLAYLIST_SRC: (playlistId: string) => `playlist/${playlistId}/src`,
+  PLAYLIST_PREVIEW: (playlistId: string) => `playlist/${playlistId}/preview`,
 };
 
 export const ALLOWED_IMAGE_MIMETYPES = ['image/png', 'image/jpg', 'image/jpeg'];
@@ -23,6 +32,7 @@ export const ALLOWED_AUDIO_MIMETYPES = [
   'audio/mpeg',
   'audio/mp3',
   'audio/x-wav',
+  'audio/wave',
 ];
 
 export const USER_LIMITS = {

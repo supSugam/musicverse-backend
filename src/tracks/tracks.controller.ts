@@ -13,9 +13,10 @@ import {
   UploadedFiles,
   ParseFilePipeBuilder,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { TracksService } from './tracks.service';
-import { CreateTrackDto } from './dto/create-track.dto';
+import { CreateTrackDto, CreateTrackPayload } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
 import { ApiConsumes } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
@@ -23,19 +24,23 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import {
   ALLOWED_AUDIO_MIMETYPES,
   ALLOWED_IMAGE_MIMETYPES,
+  FIREBASE_STORAGE_DIRS,
 } from 'src/utils/constants';
 import { CustomUploadFileValidator } from 'src/app.validator';
 import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Controller('tracks')
 export class TracksController {
-  constructor(private readonly tracksService: TracksService) {}
+  constructor(
+    private readonly tracksService: TracksService,
+    private readonly firebaseService: FirebaseService
+  ) {}
 
   @Post()
   @UseGuards(AuthGuard)
   @ApiConsumes('multipart/form-data')
-  // @UserRoles(...Object.values(Role).filter((role) => role !== Role.ADMIN))
   @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -45,21 +50,25 @@ export class TracksController {
     ])
   )
   async create(
-    @Request() req: Request,
+    @Request() req,
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     createTrackDto: CreateTrackDto,
     @UploadedFiles(
       new ParseFilePipeBuilder()
         .addValidator(
           new CustomUploadFileValidator({
-            fileTypes: ALLOWED_AUDIO_MIMETYPES,
-            maxFileSize: 1024 * 200,
-          })
-        )
-        .addValidator(
-          new CustomUploadFileValidator({
-            fileTypes: ALLOWED_IMAGE_MIMETYPES,
-            maxFileSize: 1024 * 1024 * 2,
+            src: {
+              fileTypes: ALLOWED_AUDIO_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 200,
+            },
+            cover: {
+              fileTypes: ALLOWED_IMAGE_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 2,
+            },
+            preview: {
+              fileTypes: ALLOWED_AUDIO_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 20,
+            },
           })
         )
         .build({
@@ -73,8 +82,29 @@ export class TracksController {
       preview?: Express.Multer.File[];
     }
   ) {
-    console.log(files, 'files');
-    console.log(createTrackDto, 'createTrackDto');
+    const { src, cover, preview } = files;
+    const payload = {
+      ...createTrackDto,
+      creatorId: req.user.id as string,
+      src: '',
+    };
+    if (!src) {
+      throw new BadRequestException({
+        message: ['src is required'],
+      });
+    }
+
+    const track = await this.tracksService.create(payload);
+
+    const avatarUrl = await this.firebaseService.uploadFile({
+      directory: FIREBASE_STORAGE_DIRS.USER_AVATAR(userId),
+      fileName: userId,
+      fileBuffer: avatar.buffer,
+      originalFilename: avatar.originalname,
+      fileType: 'image',
+    });
+    payload['avatar'] = avatarUrl;
+    // console.log(createTrackDto, 'createTrackDto');
     return 'TODO: create track';
   }
 
