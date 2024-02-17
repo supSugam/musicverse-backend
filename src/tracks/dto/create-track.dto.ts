@@ -45,6 +45,10 @@ export class CreateTrackDto {
   @ApiProperty({ example: '24' })
   @IsNumberString({}, { message: 'previewDuration must be a string' })
   previewDuration: string;
+
+  @ApiProperty({ example: '4157859' })
+  @IsNumberString({}, { message: 'trackSize must be a string' })
+  trackSize: string;
 }
 
 export class CreateTrackPayload extends CreateTrackDto {

@@ -22,6 +22,7 @@ export class TracksService {
         cover: createTrackDto.cover,
         lyrics: createTrackDto.lyrics,
         publicStatus: createTrackDto.publicStatus,
+        trackSize: +createTrackDto.trackSize,
         trackDuration: +createTrackDto.trackDuration,
         previewDuration: +createTrackDto.previewDuration,
         creator: {
@@ -51,6 +52,7 @@ export class TracksService {
       where: { id },
       data: {
         ...payload,
+        trackSize: +payload.trackSize,
         trackDuration: +payload.trackDuration,
         previewDuration: +payload.previewDuration,
         ...(payload.tags && {

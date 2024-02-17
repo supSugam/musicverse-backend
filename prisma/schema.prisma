@@ -94,6 +94,7 @@ model Track {
   trackDuration   Int
   previewDuration Int
   plays           Play[]
+  trackSize       Int
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   creator         User           @relation(fields: [creatorId], references: [id])
