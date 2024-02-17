@@ -91,6 +91,9 @@ model Track {
   cover           String?
   lyrics          String?
   publicStatus    ReviewStatus?  @default(NOT_REQUESTED)
+  trackDuration   Int
+  previewDuration Int
+  plays           Play[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   creator         User           @relation(fields: [creatorId], references: [id])
@@ -102,6 +105,14 @@ model Track {
   likedBy         User[]         @relation("LikedTracks")
   tags            Tag[]
 }
+
+model Play {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  track     Track    @relation(fields: [trackId], references: [id])
+  trackId   String
+  createdAt DateTime @default(now())
+}
+
 
 model Playlist {
   id              String         @id @default(dbgenerated("gen_random_uuid()"))

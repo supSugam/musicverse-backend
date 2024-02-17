@@ -3,6 +3,7 @@ import { CreateTrackDto, CreateTrackPayload } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { cleanObject } from 'src/utils/helpers/Object';
 
 @Injectable()
 export class TracksService {
@@ -21,6 +22,8 @@ export class TracksService {
         cover: createTrackDto.cover,
         lyrics: createTrackDto.lyrics,
         publicStatus: createTrackDto.publicStatus,
+        trackDuration: +createTrackDto.trackDuration,
+        previewDuration: +createTrackDto.previewDuration,
         creator: {
           connect: {
             id: createTrackDto.creatorId,
@@ -43,13 +46,16 @@ export class TracksService {
   }
 
   async update(id: string, updateTrackpayload: UpdateTrackDto) {
+    const payload = cleanObject(updateTrackpayload);
     return await this.prisma.track.update({
       where: { id },
       data: {
-        ...updateTrackpayload,
-        ...(updateTrackpayload.tags && {
+        ...payload,
+        trackDuration: +payload.trackDuration,
+        previewDuration: +payload.previewDuration,
+        ...(payload.tags && {
           tags: {
-            set: updateTrackpayload.tags.map((tagId) => ({ id: tagId })),
+            set: payload.tags.map((tagId) => ({ id: tagId })),
           },
         }),
       },

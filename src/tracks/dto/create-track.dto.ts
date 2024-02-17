@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsArray } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsArray,
+  IsNumberString,
+} from 'class-validator';
 import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
 export class CreateTrackDto {
@@ -31,6 +37,14 @@ export class CreateTrackDto {
   @ApiProperty({ example: 'genre-id-uuid' })
   @IsString({ message: 'Genre ID must be a string' })
   genreId: string;
+
+  @ApiProperty({ example: '240' })
+  @IsNumberString({}, { message: 'trackDuration must be a string' })
+  trackDuration: string;
+
+  @ApiProperty({ example: '24' })
+  @IsNumberString({}, { message: 'previewDuration must be a string' })
+  previewDuration: string;
 }
 
 export class CreateTrackPayload extends CreateTrackDto {
