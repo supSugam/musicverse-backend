@@ -28,7 +28,7 @@ model User {
   password        String
   role            UserRole?      @default(USER)
   isVerified      Boolean        @default(false)
-  artistRequestStatus ReviewStatus? @default(NOT_REQUESTED)
+  artistStatus ReviewStatus? @default(NOT_REQUESTED)
   genres          Genre[]
   profile         Profile?
   following       Following[]    @relation("Follower")
@@ -127,7 +127,7 @@ model Playlist {
   tracks          Track[]        // Tracks in this playlist
   savedBy         User[]         @relation("SavedPlaylists")
   saves           Int            @default(0) // Number of users who saved this playlist
-  isPublic        Boolean        @default(true)
+  publicStatus    ReviewStatus?  @default(NOT_REQUESTED)
   tags            Tag[]
 }
 
@@ -138,6 +138,7 @@ model Album {
   cover           String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  publicStatus    ReviewStatus?  @default(NOT_REQUESTED)
   creator         User           @relation(fields: [creatorId], references: [id])
   creatorId       String
   tracks          Track[]        // Tracks in this album
