@@ -28,7 +28,6 @@ export class ProfileService {
 
   async findOne(userId: string) {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
-    console.log(profile);
     if (!profile) {
       throw new HttpException(
         'No Profile Created for this user.',

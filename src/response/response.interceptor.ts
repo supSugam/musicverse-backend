@@ -45,6 +45,8 @@ export class ResponseInterceptor implements NestInterceptor {
       ? exception.getStatus()
       : HttpStatus.INTERNAL_SERVER_ERROR;
 
+    console.log(exception, 'exception');
+
     response.status(status).json({
       path: request.url,
       statusCode,

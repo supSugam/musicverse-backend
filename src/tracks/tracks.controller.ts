@@ -85,6 +85,7 @@ export class TracksController {
     }
   ) {
     console.log(files, 'files');
+    return ['noice'];
 
     const srcFile = files?.src?.[0];
     const coverFile = files?.cover?.[0];
@@ -135,7 +136,6 @@ export class TracksController {
         uploaded['preview'] = previewUrl;
       }
     } catch (error) {
-      console.log(error);
       await this.tracksService.remove(trackId);
       throw error;
     }
@@ -222,7 +222,6 @@ export class TracksController {
   @UseGuards(AuthGuard)
   async remove(@Request() req, @Param('id') id: string) {
     const creatorId = req.user.id as string;
-    console.log(creatorId, 'creatorId');
     const isTrackOwner = await this.tracksService.isTrackOwner(id, creatorId);
     const canDelete = req.user.role === Role.ADMIN || isTrackOwner;
     if (!canDelete) {
