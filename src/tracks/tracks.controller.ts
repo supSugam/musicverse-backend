@@ -31,7 +31,6 @@ import { CustomUploadFileValidator } from 'src/app.validator';
 import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
 import { FirebaseService } from 'src/firebase/firebase.service';
-import { RolesGuard } from 'src/guards/roles.guard';
 
 @Controller('tracks')
 export class TracksController {

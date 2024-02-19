@@ -38,6 +38,11 @@ export class TracksService {
         tags: {
           connect: createTrackDto.tags?.map((tagId) => ({ id: tagId })),
         },
+        albums: {
+          connect: createTrackDto.albumId
+            ? [{ id: createTrackDto.albumId }]
+            : undefined,
+        },
       },
     });
   }

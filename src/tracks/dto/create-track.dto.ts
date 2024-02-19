@@ -49,6 +49,12 @@ export class CreateTrackDto {
   @ApiProperty({ example: '4157859' })
   @IsNumberString({}, { message: 'trackSize must be a string' })
   trackSize: string;
+
+  // Album Id on Creation (Optional)
+  @ApiProperty()
+  @IsOptional()
+  @IsString({ message: 'albumId must be a string' })
+  albumId?: string;
 }
 
 export class CreateTrackPayload extends CreateTrackDto {
