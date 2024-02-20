@@ -16,11 +16,11 @@ export class AlbumsService {
     if (albumExists) {
       throw new BadRequestException('Album with same title already exists');
     }
+
     return await this.prisma.album.create({
       data: {
         title: createAlbumDto.title,
         description: createAlbumDto.description,
-        cover: createAlbumDto.cover,
         genre: {
           connect: {
             id: createAlbumDto.genreId,
