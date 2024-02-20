@@ -103,7 +103,10 @@ export class AlbumsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.albumsService.remove(+id);
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ADMIN)
+  async remove(@Param('id') id: string) {
+    await this.albumsService.remove(id);
+    return { message: ['Album deleted successfully'] };
   }
 }

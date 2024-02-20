@@ -39,8 +39,14 @@ export class AlbumsService {
     });
   }
 
-  findAll() {
-    return `This action returns all albums`;
+  async findAll() {
+    return await this.prisma.album.findMany({
+      include: {
+        creator: true,
+        genre: true,
+        tags: true,
+      },
+    });
   }
 
   findOne(id: number) {
@@ -62,7 +68,17 @@ export class AlbumsService {
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} album`;
+  async remove(id: string) {
+    const album = await this.prisma.album.findUnique({
+      where: { id },
+    });
+
+    if (!album) {
+      throw new BadRequestException('Album not found');
+    }
+
+    return await this.prisma.album.delete({
+      where: { id },
+    });
   }
 }
