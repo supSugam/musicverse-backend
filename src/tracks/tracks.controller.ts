@@ -83,9 +83,6 @@ export class TracksController {
       preview?: Express.Multer.File[];
     }
   ) {
-    console.log(files, 'files');
-    return ['noice'];
-
     const srcFile = files?.src?.[0];
     const coverFile = files?.cover?.[0];
     const previewFile = files?.preview?.[0];
