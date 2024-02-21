@@ -96,6 +96,7 @@ export class TracksController {
         message: ['src is required'],
       });
     }
+    console.log('payload', payload);
 
     const { id: trackId } = await this.tracksService.create(payload);
 

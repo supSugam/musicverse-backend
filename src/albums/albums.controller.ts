@@ -69,8 +69,6 @@ export class AlbumsController {
       ...createAlbumDto,
       creatorId: req.user.id as string,
     };
-    console.log('payload', payload);
-    console.log('coverFile', coverFile);
 
     const album = await this.albumsService.create(payload);
 

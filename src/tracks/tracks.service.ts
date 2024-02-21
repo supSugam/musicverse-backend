@@ -44,12 +44,12 @@ export class TracksService {
         },
         ...(tags && {
           tags: {
-            connect: payload.tags.map((tagId) => ({ id: tagId })),
+            connect: tags.map((tagId) => ({ id: tagId })),
           },
         }),
         ...(albumIds && {
           albums: {
-            connect: payload.albumIds.map((albumId) => ({ id: albumId })),
+            connect: albumIds.map((albumId) => ({ id: albumId })),
           },
         }),
       },
