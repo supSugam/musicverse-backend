@@ -13,56 +13,83 @@ export class TracksService {
   ) {}
 
   async create(createTrackDto: CreateTrackPayload) {
+    // Check if track with same title and same creator exists
+    const payload = cleanObject(createTrackDto);
+    const { creatorId, genreId, tags, albumIds, ...rest } = payload;
+    const trackExists = await this.prisma.track.findFirst({
+      where: {
+        title: payload.title,
+        creatorId: payload.creatorId,
+      },
+    });
+    if (trackExists) {
+      throw new BadRequestException('You already have a track with same title');
+    }
+
     return await this.prisma.track.create({
       data: {
-        title: createTrackDto.title,
-        description: createTrackDto.description,
-        src: createTrackDto.src,
-        preview: createTrackDto.preview,
-        cover: createTrackDto.cover,
-        lyrics: createTrackDto.lyrics,
-        publicStatus: createTrackDto.publicStatus,
-        trackSize: createTrackDto.trackSize,
-        trackDuration: createTrackDto.trackDuration,
-        previewDuration: createTrackDto.previewDuration,
+        ...rest,
+        trackSize: +payload.trackSize,
+        trackDuration: +payload.trackDuration,
+        previewDuration: +payload.previewDuration,
         creator: {
           connect: {
-            id: createTrackDto.creatorId,
+            id: creatorId,
           },
         },
         genre: {
           connect: {
-            id: createTrackDto.genreId,
+            id: genreId,
           },
         },
-        tags: {
-          connect: createTrackDto.tags?.map((tagId) => ({ id: tagId })),
-        },
-        albums: {
-          connect: createTrackDto.albumId
-            ? { id: createTrackDto.albumId }
-            : undefined,
-        },
+        ...(tags && {
+          tags: {
+            connect: payload.tags.map((tagId) => ({ id: tagId })),
+          },
+        }),
+        ...(albumIds && {
+          albums: {
+            connect: payload.albumIds.map((albumId) => ({ id: albumId })),
+          },
+        }),
       },
     });
   }
 
-  findAll() {
-    return `This action returns all tracks`;
+  async findAll() {
+    return await this.prisma.track.findMany({
+      include: {
+        creator: true,
+        genre: true,
+        tags: true,
+        albums: true,
+      },
+    });
   }
 
   async update(id: string, updateTrackpayload: UpdateTrackDto) {
     const payload = cleanObject(updateTrackpayload);
+    const {
+      tags,
+      genreId,
+      albumIds,
+      trackDuration,
+      trackSize,
+      previewDuration,
+      ...rest
+    } = payload;
     return await this.prisma.track.update({
       where: { id },
       data: {
-        ...payload,
-        trackSize: +payload.trackSize,
-        trackDuration: +payload.trackDuration,
-        previewDuration: +payload.previewDuration,
-        ...(payload.tags && {
+        ...rest,
+        ...(tags && {
           tags: {
-            set: payload.tags.map((tagId) => ({ id: tagId })),
+            set: tags.map((tagId) => ({ id: tagId })),
+          },
+        }),
+        ...(albumIds && {
+          albums: {
+            set: albumIds.map((albumId) => ({ id: albumId })),
           },
         }),
       },

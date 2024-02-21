@@ -40,22 +40,23 @@ export class CreateTrackDto {
   genreId: string;
 
   @ApiProperty()
-  @IsNumber({}, { message: 'trackDuration must be a number' })
-  trackDuration: number;
+  @IsNumberString({}, { message: 'trackDuration must be a number' })
+  trackDuration: string;
 
   @ApiProperty()
-  @IsNumber({}, { message: 'previewDuration must be a number' })
-  previewDuration: number;
+  @IsNumberString({}, { message: 'previewDuration must be a number' })
+  previewDuration: string;
 
   @ApiProperty()
-  @IsNumber({}, { message: 'trackSize must be a number' })
-  trackSize: number;
+  @IsNumberString({}, { message: 'trackSize must be a number' })
+  trackSize: string;
 
   // Album Id on Creation (Optional)
   @ApiProperty()
   @IsOptional()
-  @IsString({ message: 'albumId must be a string' })
-  albumId?: string;
+  @IsArray({ message: 'Album IDs must be an array' })
+  @IsString({ each: true, message: 'Album IDs must be strings' })
+  albumIds?: string[];
 }
 
 export class CreateTrackPayload extends CreateTrackDto {

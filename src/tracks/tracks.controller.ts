@@ -141,7 +141,7 @@ export class TracksController {
 
   @Get()
   findAll() {
-    // return this.tracksService.findAll();
+    return this.tracksService.findAll();
   }
 
   // @Get(':id')
