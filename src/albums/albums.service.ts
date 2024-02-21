@@ -3,10 +3,14 @@ import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { cleanObject } from 'src/utils/helpers/Object';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Injectable()
 export class AlbumsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private firebaseService: FirebaseService
+  ) {}
 
   async create(createAlbumDto: CreateAlbumDto) {
     // Check if album with same title exists
@@ -17,24 +21,26 @@ export class AlbumsService {
       throw new BadRequestException('Album with same title already exists');
     }
 
+    const payload = cleanObject(createAlbumDto);
+    const { tags, genreId, creatorId, ...rest } = payload;
     return await this.prisma.album.create({
       data: {
-        title: createAlbumDto.title,
-        description: createAlbumDto.description,
+        ...rest,
+        ...(tags && {
+          tags: {
+            connect: tags.map((tagId) => ({ id: tagId })),
+          },
+        }),
         genre: {
           connect: {
-            id: createAlbumDto.genreId,
+            id: genreId,
           },
         },
         creator: {
           connect: {
-            id: createAlbumDto.creatorId,
+            id: creatorId,
           },
         },
-        tags: {
-          connect: createAlbumDto.tags?.map((tagId) => ({ id: tagId })),
-        },
-        publicStatus: createAlbumDto.publicStatus,
       },
     });
   }
@@ -45,6 +51,7 @@ export class AlbumsService {
         creator: true,
         genre: true,
         tags: true,
+        tracks: true,
       },
     });
   }
@@ -69,16 +76,18 @@ export class AlbumsService {
   }
 
   async remove(id: string) {
-    const album = await this.prisma.album.findUnique({
-      where: { id },
-    });
-
-    if (!album) {
-      throw new BadRequestException('Album not found');
+    try {
+      await this.prisma.album.delete({
+        where: { id },
+      });
+      await this.firebaseService.deleteDirectory({ directory: `album/${id}` });
+    } catch (error) {
+      throw new BadRequestException({ message: 'Album not found' });
     }
+  }
 
-    return await this.prisma.album.delete({
-      where: { id },
-    });
+  async removeAll() {
+    await this.prisma.album.deleteMany();
+    await this.firebaseService.deleteDirectory({ directory: '/album' });
   }
 }

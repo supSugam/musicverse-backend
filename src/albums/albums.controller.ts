@@ -44,7 +44,7 @@ export class AlbumsController {
   async create(
     @Request() req,
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
-    CreateAlbumDto: CreateAlbumDto,
+    createAlbumDto: CreateAlbumDto,
     @UploadedFiles(
       new ParseFilePipeBuilder()
         .addValidator(
@@ -66,9 +66,11 @@ export class AlbumsController {
   ) {
     const coverFile = files?.cover?.[0];
     const payload = {
-      ...CreateAlbumDto,
+      ...createAlbumDto,
       creatorId: req.user.id as string,
     };
+    console.log('payload', payload);
+    console.log('coverFile', coverFile);
 
     const album = await this.albumsService.create(payload);
 
@@ -108,5 +110,12 @@ export class AlbumsController {
   async remove(@Param('id') id: string) {
     await this.albumsService.remove(id);
     return { message: ['Album deleted successfully'] };
+  }
+  @Delete()
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ADMIN)
+  async removeAll() {
+    await this.albumsService.removeAll();
+    return { message: ['All albums deleted successfully'] };
   }
 }

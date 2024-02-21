@@ -25,7 +25,7 @@ export class FirebaseService {
       wav: 'audio/wav',
     };
 
-    return mimeTypes[extension.toLowerCase()];
+    return mimeTypes[extension?.toLowerCase()];
   }
   private async uploadChunkedFile({
     destinationPath,
@@ -75,17 +75,31 @@ export class FirebaseService {
   }: IUploadProps): Promise<string> {
     const [baseFileName, extension] = splitStringFromLastDot(originalFilename);
 
-    const contentType = this.getFileMimeType(extension);
+    //FIXME: This is a temporary fix for the issue of not being able to get the correct file type
+
+    const mimeType = this.getFileMimeType(extension);
+    const contentType = mimeType
+      ? mimeType
+      : fileType === 'image'
+        ? 'image/jpg'
+        : 'audio/mpeg';
 
     // Delete existing file with the same userId and fileName (ignoring extension)
     await this.deleteFile({ directory, fileName });
 
-    const metadata = { fileName, originalFilename, baseFileName, fileType };
+    const metadata = {
+      fileName,
+      originalFilename,
+      baseFileName,
+      type: fileType,
+      mimeType: contentType,
+      extension,
+    };
 
     return await this.uploadChunkedFile({
       destinationPath: `${directory}/${fileName}${extension !== undefined ? `.${extension}` : ''}`,
       fileBuffer,
-      contentType: contentType || '',
+      contentType: contentType,
       metadata,
     });
   }

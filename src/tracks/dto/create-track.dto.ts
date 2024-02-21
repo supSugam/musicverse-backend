@@ -5,6 +5,7 @@ import {
   IsString,
   IsArray,
   IsNumberString,
+  IsNumber,
 } from 'class-validator';
 import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
@@ -38,17 +39,17 @@ export class CreateTrackDto {
   @IsString({ message: 'Genre ID must be a string' })
   genreId: string;
 
-  @ApiProperty({ example: '240' })
-  @IsNumberString({}, { message: 'trackDuration must be a string' })
-  trackDuration: string;
+  @ApiProperty()
+  @IsNumber({}, { message: 'trackDuration must be a number' })
+  trackDuration: number;
 
-  @ApiProperty({ example: '24' })
-  @IsNumberString({}, { message: 'previewDuration must be a string' })
-  previewDuration: string;
+  @ApiProperty()
+  @IsNumber({}, { message: 'previewDuration must be a number' })
+  previewDuration: number;
 
-  @ApiProperty({ example: '4157859' })
-  @IsNumberString({}, { message: 'trackSize must be a string' })
-  trackSize: string;
+  @ApiProperty()
+  @IsNumber({}, { message: 'trackSize must be a number' })
+  trackSize: number;
 
   // Album Id on Creation (Optional)
   @ApiProperty()

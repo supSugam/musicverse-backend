@@ -22,9 +22,9 @@ export class TracksService {
         cover: createTrackDto.cover,
         lyrics: createTrackDto.lyrics,
         publicStatus: createTrackDto.publicStatus,
-        trackSize: +createTrackDto.trackSize,
-        trackDuration: +createTrackDto.trackDuration,
-        previewDuration: +createTrackDto.previewDuration,
+        trackSize: createTrackDto.trackSize,
+        trackDuration: createTrackDto.trackDuration,
+        previewDuration: createTrackDto.previewDuration,
         creator: {
           connect: {
             id: createTrackDto.creatorId,
@@ -40,7 +40,7 @@ export class TracksService {
         },
         albums: {
           connect: createTrackDto.albumId
-            ? [{ id: createTrackDto.albumId }]
+            ? { id: createTrackDto.albumId }
             : undefined,
         },
       },
