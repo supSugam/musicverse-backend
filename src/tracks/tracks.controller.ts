@@ -31,6 +31,9 @@ import { CustomUploadFileValidator } from 'src/app.validator';
 import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { BasePaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
+import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
+import { TrackBasePaginationDto } from './dto/track-pagination.dto';
 
 @Controller('tracks')
 export class TracksController {
@@ -141,7 +144,13 @@ export class TracksController {
   }
 
   @Get()
-  findAll() {
+  findAll(
+    @BasePaginationQueryParams(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
+    )
+    params: TrackBasePaginationDto
+  ) {
+    console.log('params', params);
     return this.tracksService.findAll();
   }
 

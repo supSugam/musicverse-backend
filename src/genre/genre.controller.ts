@@ -16,8 +16,8 @@ import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
-import { PaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
-import { PaginationDto } from 'src/pagination/dto/pagination.dto';
+import { BasePaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
+import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
 import { PaginationService } from 'src/pagination/pagination.service';
 
 @Controller('genre')
@@ -43,10 +43,10 @@ export class GenreController {
 
   @Get()
   async findAll(
-    @PaginationQueryParams(
+    @BasePaginationQueryParams(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
     )
-    params: PaginationDto
+    params: BasePaginationDto
   ) {
     return await this.paginationService.paginate({
       modelName: 'genre',

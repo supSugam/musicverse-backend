@@ -1,13 +1,13 @@
 // pagination.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PaginationDto } from 'src/pagination/dto/pagination.dto';
+import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
 
 @Injectable()
 export class PaginationService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async paginate(params: PaginationDto & { modelName: string }) {
+  async paginate(params: BasePaginationDto & { modelName: string }) {
     try {
       const { page, pageSize, search, modelName, sortOrder } = params;
 

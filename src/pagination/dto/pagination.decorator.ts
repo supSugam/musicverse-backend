@@ -1,9 +1,9 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { PaginationDto } from './pagination.dto';
+import { BasePaginationDto } from './pagination.dto';
 import { SortOrder } from 'src/utils/enums/SortOrder.enum';
 
-export const PaginationQueryParams = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext): PaginationDto => {
+export const BasePaginationQueryParams = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext): BasePaginationDto => {
     const request = ctx.switchToHttp().getRequest();
 
     return {

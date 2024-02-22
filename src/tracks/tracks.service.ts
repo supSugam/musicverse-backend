@@ -63,6 +63,18 @@ export class TracksService {
         genre: true,
         tags: true,
         albums: true,
+        likedBy: true,
+        playlists: true,
+        plays: true,
+        _count: {
+          select: {
+            plays: true,
+            likedBy: true,
+            albums: true,
+            playlists: true,
+            tags: true,
+          },
+        },
       },
     });
   }

@@ -2,12 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { SortOrder } from '../../utils/enums/SortOrder.enum';
 import { IsEnum, IsNumberString, IsOptional, IsString } from 'class-validator';
 
-export class PaginationDto {
+export class BasePaginationDto {
   @ApiProperty()
-  @IsNumberString(
-    { no_symbols: true },
-    { message: 'Page must be a string containing a number.' }
-  )
+  @IsNumberString({ no_symbols: true }, { message: 'Page must be a number.' })
   @IsOptional()
   page?: string;
 
@@ -15,7 +12,7 @@ export class PaginationDto {
   @IsOptional()
   @IsNumberString(
     { no_symbols: true },
-    { message: 'Page size must be a string containing a number.' }
+    { message: 'Page size must be a number.' }
   )
   pageSize?: string;
 

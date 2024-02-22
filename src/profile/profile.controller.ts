@@ -21,8 +21,8 @@ import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { PaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
-import { PaginationDto } from 'src/pagination/dto/pagination.dto';
+import { BasePaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
+import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
 import { PaginationService } from 'src/pagination/pagination.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
@@ -110,10 +110,10 @@ export class ProfileController {
 
   @Get()
   async findAll(
-    @PaginationQueryParams(
+    @BasePaginationQueryParams(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
     )
-    params: PaginationDto
+    params: BasePaginationDto
   ) {
     return await this.paginationService.paginate({
       modelName: 'profile',
