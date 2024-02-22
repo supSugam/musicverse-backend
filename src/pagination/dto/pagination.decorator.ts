@@ -6,13 +6,15 @@ export const BasePaginationQueryParams = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): BasePaginationDto => {
     const request = ctx.switchToHttp().getRequest();
 
-    return {
-      page: request.query.page ? String(request.query.page) : undefined,
-      pageSize: request.query.pageSize
-        ? String(request.query.pageSize)
-        : undefined,
-      search: request.query.search ? String(request.query.search) : undefined,
-      sortOrder: (request.query.sortOrder as SortOrder) || SortOrder.ASC,
-    };
+    return getBasePaginationDto(request.query);
   }
 );
+
+export const getBasePaginationDto = (obj: any): BasePaginationDto => {
+  return {
+    page: obj.page ? String(obj.page) : undefined,
+    pageSize: obj.pageSize ? String(obj.pageSize) : undefined,
+    search: obj.search ? String(obj.search) : undefined,
+    sortOrder: obj.sortOrder || SortOrder.ASC,
+  };
+};

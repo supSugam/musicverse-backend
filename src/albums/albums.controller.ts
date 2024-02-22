@@ -28,12 +28,17 @@ import {
   FIREBASE_STORAGE_DIRS,
 } from 'src/utils/constants';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { cleanObject } from 'src/utils/helpers/Object';
+import { PaginationService } from 'src/pagination/pagination.service';
+import { AlbumsPaginationQueryParams } from './album-pagination.decorator';
+import { AlbumPaginationDto } from './dto/album-pagination.dto';
 
 @Controller('albums')
 export class AlbumsController {
   constructor(
     private readonly albumsService: AlbumsService,
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly paginationService: PaginationService
   ) {}
 
   @Post()
@@ -89,8 +94,21 @@ export class AlbumsController {
   }
 
   @Get()
-  findAll() {
-    return this.albumsService.findAll();
+  async findAll(
+    @AlbumsPaginationQueryParams(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
+    )
+    params: AlbumPaginationDto
+  ) {
+    const { page, pageSize, search, sortOrder, ...rest } = cleanObject(params);
+    console.log('params', params);
+    return await this.paginationService.paginate({
+      modelName: 'Album',
+      include: rest,
+      page,
+      pageSize,
+      where: search ? { title: search } : {},
+    });
   }
 
   @Get(':id')

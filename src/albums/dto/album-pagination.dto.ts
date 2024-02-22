@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional } from 'class-validator';
 import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
 
-export class TrackPaginationDto extends BasePaginationDto {
+export class AlbumPaginationDto extends BasePaginationDto {
   @ApiProperty({ required: false })
   @IsOptional()
   creator?: boolean;
@@ -17,13 +17,9 @@ export class TrackPaginationDto extends BasePaginationDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  albums?: boolean;
+  tracks?: boolean;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  likedBy?: boolean;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  playlists?: boolean;
+  savedBy?: boolean;
 }

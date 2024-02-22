@@ -31,16 +31,17 @@ import { CustomUploadFileValidator } from 'src/app.validator';
 import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
 import { FirebaseService } from 'src/firebase/firebase.service';
-import { BasePaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
-import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
-import { TracksPaginationDto } from './dto/track-pagination.dto';
 import { TracksPaginationQueryParams } from './tracks-pagination.decorator';
+import { cleanObject } from 'src/utils/helpers/Object';
+import { PaginationService } from 'src/pagination/pagination.service';
+import { TrackPaginationDto } from './dto/track-pagination.dto';
 
 @Controller('tracks')
 export class TracksController {
   constructor(
     private readonly tracksService: TracksService,
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly paginationService: PaginationService
   ) {}
 
   @Post()
@@ -145,14 +146,19 @@ export class TracksController {
   }
 
   @Get()
-  findAll(
+  async findAll(
     @TracksPaginationQueryParams(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
     )
-    params: TracksPaginationDto
+    params: TrackPaginationDto
   ) {
-    console.log('params', params);
-    return this.tracksService.findAll();
+    const { page, pageSize, search, sortOrder, ...rest } = cleanObject(params);
+    return await this.paginationService.paginate({
+      modelName: 'Track',
+      include: rest,
+      page,
+      pageSize,
+    });
   }
 
   // @Get(':id')

@@ -27,6 +27,7 @@ export class PaginationService {
     page,
     pageSize,
     modelName,
+    search,
     where,
     orderBy,
     // select,
