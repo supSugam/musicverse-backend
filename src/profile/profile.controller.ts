@@ -115,8 +115,8 @@ export class ProfileController {
     )
     params: BasePaginationDto
   ) {
-    return await this.paginationService.paginate({
-      modelName: 'profile',
+    return await this.paginationService.paginate<'Profile'>({
+      modelName: 'Profile',
       ...params,
     });
   }

@@ -1,29 +1,49 @@
-// pagination.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
+import { Prisma } from '@prisma/client';
+
+export type ModelNames =
+  (typeof Prisma.ModelName)[keyof typeof Prisma.ModelName];
+
+type PrismaOperations<ModelName extends ModelNames> =
+  Prisma.TypeMap['model'][ModelName]['operations'];
+type PrismaFindManyArgs<ModelName extends ModelNames> =
+  PrismaOperations<ModelName>['findMany']['args'];
+
+type PaginationOptions<ModelName extends ModelNames> = {
+  modelName: ModelName;
+  where?: PrismaFindManyArgs<ModelName>['where'];
+  orderBy?: PrismaFindManyArgs<ModelName>['orderBy'];
+  // select?: PrismaFindManyArgs<ModelName>['select'];
+  include?: PrismaFindManyArgs<ModelName>['include'];
+} & BasePaginationDto;
 
 @Injectable()
 export class PaginationService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async paginate(params: BasePaginationDto & { modelName: string }) {
+  async paginate<ModelName extends ModelNames>({
+    page,
+    pageSize,
+    modelName,
+    where,
+    orderBy,
+    // select,
+    include,
+  }: PaginationOptions<ModelName>) {
     try {
-      const { page, pageSize, search, modelName, sortOrder } = params;
-
-      const where = search
-        ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-
-              // Add more search conditions as needed
-            ],
-          }
-        : {};
+      console.log('modelName', modelName);
+      const db = this.prismaService[modelName as string];
 
       if (!page || !pageSize) {
-        const items = await this.prismaService[modelName].findMany({
-          ...(search && { where }),
+        const items = await db.findMany({
+          where: where || {},
+          orderBy: orderBy || {
+            createdAt: 'asc',
+          },
+          // select: select || {},
+          include: include || {},
         });
         return {
           items,
@@ -33,24 +53,23 @@ export class PaginationService {
 
       const skip = (+page - 1) * +pageSize;
 
-      const orderBy = {
-        // Assuming 'createdAt' as a sorting field. Customize as needed.
-        createdAt: sortOrder,
-      };
+      const totalCount = await db.count({
+        where,
+      });
 
-      const items = await this.prismaService[modelName].findMany({
-        skip,
-        take: +pageSize,
+      const items = await db.findMany({
         where,
         orderBy,
+        skip,
+        take: pageSize,
       });
 
       return {
         items,
-        totalCount: items.length,
+        totalCount,
       };
     } catch (error) {
-      throw error;
+      throw new NotFoundException('Data not found', error);
     }
   }
 }

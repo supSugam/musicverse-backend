@@ -83,6 +83,7 @@ export class AlbumsController {
 
       return await this.albumsService.update(album.id, { cover: coverUrl });
     }
+    //TODO: use createMany to create multiple tracks for this album
 
     return album;
   }

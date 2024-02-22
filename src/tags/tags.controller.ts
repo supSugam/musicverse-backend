@@ -48,8 +48,8 @@ export class TagsController {
     )
     params: BasePaginationDto
   ) {
-    return await this.paginationService.paginate({
-      modelName: 'tag',
+    return await this.paginationService.paginate<'Tag'>({
+      modelName: 'Tag',
       ...params,
     });
   }

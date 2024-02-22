@@ -48,8 +48,8 @@ export class GenreController {
     )
     params: BasePaginationDto
   ) {
-    return await this.paginationService.paginate({
-      modelName: 'genre',
+    return await this.paginationService.paginate<'Genre'>({
+      modelName: 'Genre',
       ...params,
     });
   }

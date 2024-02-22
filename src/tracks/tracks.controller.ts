@@ -33,7 +33,8 @@ import { Role } from 'src/guards/roles.enum';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { BasePaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
 import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
-import { TrackBasePaginationDto } from './dto/track-pagination.dto';
+import { TracksPaginationDto } from './dto/track-pagination.dto';
+import { TracksPaginationQueryParams } from './tracks-pagination.decorator';
 
 @Controller('tracks')
 export class TracksController {
@@ -145,10 +146,10 @@ export class TracksController {
 
   @Get()
   findAll(
-    @BasePaginationQueryParams(
+    @TracksPaginationQueryParams(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
     )
-    params: TrackBasePaginationDto
+    params: TracksPaginationDto
   ) {
     console.log('params', params);
     return this.tracksService.findAll();
