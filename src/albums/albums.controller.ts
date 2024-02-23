@@ -106,7 +106,11 @@ export class AlbumsController {
       include: {
         ...rest,
         creator: {
-          include: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
             profile: true,
           },
         },
