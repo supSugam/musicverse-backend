@@ -101,10 +101,16 @@ export class AlbumsController {
     params: AlbumPaginationDto
   ) {
     const { page, pageSize, search, sortOrder, ...rest } = cleanObject(params);
-    console.log('params', params);
     return await this.paginationService.paginate({
       modelName: 'Album',
-      include: rest,
+      include: {
+        ...rest,
+        creator: {
+          include: {
+            profile: true,
+          },
+        },
+      },
       page,
       pageSize,
       where: search ? { title: search } : {},

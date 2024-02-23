@@ -152,12 +152,40 @@ export class TracksController {
     )
     params: TrackPaginationDto
   ) {
-    const { page, pageSize, search, sortOrder, ...rest } = cleanObject(params);
-    return await this.paginationService.paginate({
-      modelName: 'Track',
-      include: rest,
+    const {
       page,
       pageSize,
+      search,
+      sortOrder,
+      selectedGenre,
+      selectedTag,
+      ...rest
+    } = cleanObject(params);
+    console.log('params', params);
+
+    return await this.paginationService.paginate({
+      modelName: 'Track',
+      include: {
+        ...rest,
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            profile: true,
+          },
+        },
+      },
+      page,
+      pageSize,
+      where: {
+        AND: {
+          ...(selectedGenre && { genreId: selectedGenre }),
+          ...(selectedTag && { tags: { some: { id: selectedTag } } }),
+          ...(search && { title: { contains: search, mode: 'insensitive' } }),
+        },
+      },
     });
   }
 

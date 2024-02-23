@@ -26,4 +26,12 @@ export class TrackPaginationDto extends BasePaginationDto {
   @ApiProperty({ required: false })
   @IsOptional()
   playlists?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  selectedGenre?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  selectedTag?: string;
 }

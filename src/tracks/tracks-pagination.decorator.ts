@@ -9,11 +9,13 @@ export const TracksPaginationQueryParams = createParamDecorator(
     return {
       ...getBasePaginationDto(request.query),
       albums: Boolean(request.query.albums),
-      creator: Boolean(request.query.artists),
-      genre: Boolean(request.query.genres),
+      creator: Boolean(request.query.creator),
+      genre: Boolean(request.query.genre),
       playlists: Boolean(request.query.playlists),
       likedBy: Boolean(request.query.likedBy),
       tags: Boolean(request.query.tags),
+      selectedGenre: request.query.selectedGenre,
+      selectedTag: request.query.selectedTag,
     };
   }
 );
