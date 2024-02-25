@@ -133,4 +133,38 @@ export class TracksService {
     await this.prisma.track.deleteMany({});
     await this.firebaseService.deleteDirectory({ directory: '/track' });
   }
+
+  async toggleLike(trackId: string, userId: string) {
+    const track = await this.prisma.track.findUnique({
+      where: { id: trackId },
+      select: { likedBy: { where: { id: userId } } },
+    });
+    if (!track) throw new BadRequestException({ message: 'Track not found' });
+
+    if (track.likedBy.length) {
+      await this.prisma.track.update({
+        where: { id: trackId },
+        data: {
+          likedBy: {
+            disconnect: {
+              id: userId,
+            },
+          },
+        },
+      });
+      return { message: ['Track unliked.'] };
+    } else {
+      await this.prisma.track.update({
+        where: { id: trackId },
+        data: {
+          likedBy: {
+            connect: {
+              id: userId,
+            },
+          },
+        },
+      });
+      return { message: ['Track liked.'] };
+    }
+  }
 }

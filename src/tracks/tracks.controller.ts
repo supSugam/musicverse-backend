@@ -281,4 +281,12 @@ export class TracksController {
     await this.tracksService.removeAll();
     return { message: ['All tracks deleted successfully'] };
   }
+
+  @Post('toggle-like/:id')
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
+  async toggleLike(@Request() req, @Param('id') id: string) {
+    const userId = req.user.id as string;
+    return await this.tracksService.toggleLike(id, userId);
+  }
 }
