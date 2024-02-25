@@ -161,7 +161,6 @@ export class TracksController {
       selectedTag,
       ...rest
     } = cleanObject(params);
-    console.log('params', params);
 
     return await this.paginationService.paginate({
       modelName: 'Track',

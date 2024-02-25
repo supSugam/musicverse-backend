@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
 import { Prisma } from '@prisma/client';
+import { SortOrder } from 'src/utils/enums/SortOrder.enum';
 
 export type ModelNames =
   (typeof Prisma.ModelName)[keyof typeof Prisma.ModelName];
@@ -15,9 +16,11 @@ type PaginationOptions<ModelName extends ModelNames> = {
   modelName: ModelName;
   where?: PrismaFindManyArgs<ModelName>['where'];
   orderBy?: PrismaFindManyArgs<ModelName>['orderBy'];
-  // select?: PrismaFindManyArgs<ModelName>['select'];
   include?: PrismaFindManyArgs<ModelName>['include'];
-} & BasePaginationDto;
+  page?: string;
+  pageSize?: string;
+  search?: string;
+};
 
 @Injectable()
 export class PaginationService {
@@ -27,15 +30,13 @@ export class PaginationService {
     page,
     pageSize,
     modelName,
-    search,
     where,
     orderBy,
-    // select,
     include,
   }: PaginationOptions<ModelName>) {
     try {
-      console.log('modelName', modelName);
       const db = this.prismaService[modelName as string];
+      // This is equivalent to: this.prismaService.track (assuming modelName is 'track')
 
       if (!page || !pageSize) {
         const items = await db.findMany({
@@ -43,7 +44,6 @@ export class PaginationService {
           orderBy: orderBy || {
             createdAt: 'asc',
           },
-          // select: select || {},
           include: include || {},
         });
         return {
