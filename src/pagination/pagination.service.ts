@@ -17,10 +17,7 @@ type PaginationOptions<ModelName extends ModelNames> = {
   where?: PrismaFindManyArgs<ModelName>['where'];
   orderBy?: PrismaFindManyArgs<ModelName>['orderBy'];
   include?: PrismaFindManyArgs<ModelName>['include'];
-  page?: string;
-  pageSize?: string;
-  search?: string;
-};
+} & BasePaginationDto;
 
 @Injectable()
 export class PaginationService {
@@ -64,6 +61,10 @@ export class PaginationService {
         skip,
         take: pageSize,
       });
+
+      const prevPage = +page > 1 ? +page - 1 : null;
+      const nextPage =
+        +page < Math.ceil(totalCount / +pageSize) ? +page + 1 : null;
 
       return {
         items,
