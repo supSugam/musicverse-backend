@@ -167,4 +167,10 @@ export class TracksService {
       return { message: ['Track liked.'] };
     }
   }
+
+  async getLikedTracks(userId: string) {
+    return await this.prisma.track.findMany({
+      where: { likedBy: { some: { id: userId } } },
+    });
+  }
 }

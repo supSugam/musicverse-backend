@@ -62,10 +62,6 @@ export class PaginationService {
         take: pageSize,
       });
 
-      const prevPage = +page > 1 ? +page - 1 : null;
-      const nextPage =
-        +page < Math.ceil(totalCount / +pageSize) ? +page + 1 : null;
-
       return {
         items,
         totalCount,

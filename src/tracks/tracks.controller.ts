@@ -101,7 +101,6 @@ export class TracksController {
         message: ['src is required'],
       });
     }
-    console.log('payload', payload);
 
     const { id: trackId } = await this.tracksService.create(payload);
 
@@ -146,12 +145,16 @@ export class TracksController {
   }
 
   @Get()
+  @UseGuards(AuthGuard)
   async findAll(
+    @Request() req,
     @TracksPaginationQueryParams(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
     )
     params: TrackPaginationDto
   ) {
+    const userId = req?.user?.id;
+    console.log('userId', userId);
     const {
       page,
       pageSize,
@@ -162,7 +165,7 @@ export class TracksController {
       ...rest
     } = cleanObject(params);
 
-    return await this.paginationService.paginate({
+    const res = await this.paginationService.paginate({
       modelName: 'Track',
       include: {
         ...rest,
@@ -186,6 +189,17 @@ export class TracksController {
         },
       },
     });
+    if (userId) {
+      const likedTracks = await this.tracksService.getLikedTracks(userId);
+      console.log('likedTracks', likedTracks);
+      res.items = res.items.map((track) => {
+        track['isLiked'] = likedTracks.some(
+          (likedTrack) => likedTrack.id === track.id
+        );
+        return track;
+      });
+    }
+    return res;
   }
 
   // @Get(':id')
@@ -287,5 +301,13 @@ export class TracksController {
   async toggleLike(@Request() req, @Param('id') id: string) {
     const userId = req.user.id as string;
     return await this.tracksService.toggleLike(id, userId);
+  }
+
+  @Get('liked')
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
+  async getLikedTracks(@Request() req) {
+    const userId = req.user.id as string;
+    return await this.tracksService.getLikedTracks(userId);
   }
 }
