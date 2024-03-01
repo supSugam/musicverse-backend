@@ -153,8 +153,8 @@ export class TracksController {
     )
     params: TrackPaginationDto
   ) {
+    const start = Date.now();
     const userId = req?.user?.id;
-    console.log('userId', userId);
     const {
       page,
       pageSize,

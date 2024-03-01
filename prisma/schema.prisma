@@ -13,6 +13,7 @@ enum UserRole {
   ARTIST
   ADMIN
 }
+
 enum ReviewStatus {
   REQUESTED
   APPROVED
@@ -20,93 +21,122 @@ enum ReviewStatus {
   NOT_REQUESTED
 }
 
-
 model User {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  username        String         @unique
-  email           String         @unique
-  password        String
-  role            UserRole?      @default(USER)
-  isVerified      Boolean        @default(false)
-  artistStatus    ReviewStatus?  @default(NOT_REQUESTED)
-  genres          Genre[]
-  profile         Profile?
-  following       Following[]    @relation("Follower")
-  followers       Followers[]    @relation("Following")
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  tracks          Track[]
-  playlists       Playlist[]
-  albums          Album[]
-  savedAlbums     Album[]        @relation("SavedAlbums")
-  savedPlaylists  Playlist[]     @relation("SavedPlaylists")
-  likedTracks     Track[]        @relation("LikedTracks")
-  memberships     Membership[]
-  collaboratedPlaylists   Playlist[]     @relation("Collaborators")
-}
-
-model Profile {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  name            String
-  bio             String?
-  avatar          String?
-  cover           String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  userId          String         @unique
-  user            User           @relation(fields: [userId], references: [id])
-}
-
-model Genre {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  name            String         @unique
-  description     String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  users           User[]
-  tracks          Track[]
-  albums          Album[]
-}
-
-model Following {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  follower        User           @relation("Follower", fields: [followerId], references: [id])
-  followerId      String
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-}
-
-model Followers {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  following       User           @relation("Following", fields: [followingId], references: [id])
-  followingId     String
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                    String          @id @default(dbgenerated("gen_random_uuid()"))
+  username              String          @unique
+  email                 String          @unique
+  password              String
+  role                  UserRole?       @default(USER)
+  isVerified            Boolean         @default(false)
+  artistStatus          ReviewStatus?   @default(NOT_REQUESTED)
+  genres                Genre[]
+  profile               Profile?
+  following             Following[]     @relation("Follower")
+  followers             Followers[]     @relation("Following")
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  tracks                Track[]
+  playlists             Playlist[]
+  albums                Album[]
+  memberships           Membership[]
+  collaboratedPlaylists Playlist[]      @relation("Collaborators")
+  likedTracks           LikedTrack[]
+  savedPlaylists        SavedPlaylist[]
+  savedAlbums           SavedAlbum[]
 }
 
 model Track {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  id              String        @id @default(dbgenerated("gen_random_uuid()"))
   title           String
   description     String?
   src             String
   preview         String?
   cover           String?
   lyrics          String?
-  publicStatus    ReviewStatus?  @default(NOT_REQUESTED)
+  publicStatus    ReviewStatus? @default(NOT_REQUESTED)
   trackDuration   Int
   previewDuration Int
   plays           Play[]
   trackSize       Int
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  creator         User           @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  creator         User          @relation(fields: [creatorId], references: [id])
   creatorId       String
-  genre           Genre          @relation(fields: [genreId], references: [id])
+  genre           Genre         @relation(fields: [genreId], references: [id])
   genreId         String
-  playlists       Playlist[]     // Playlists containing this track
-  albums          Album[]        // Albums containing this track
-  likedBy         User[]         @relation("LikedTracks")
+  playlists       Playlist[] // Playlists containing this track
+  albums          Album[] // Albums containing this track
   tags            Tag[]
+  likedBy         LikedTrack[]  // Tracks liked by users
+}
+
+model LikedTrack {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  track     Track    @relation(fields: [trackId], references: [id])
+  trackId   String
+  likedAt   DateTime @default(now())
+  @@unique([userId, trackId])
+}
+
+model SavedPlaylist {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  playlistId String
+  savedAt    DateTime @default(now())
+  @@unique([userId, playlistId])
+}
+
+model SavedAlbum {
+  id      String   @id @default(dbgenerated("gen_random_uuid()"))
+  user    User     @relation(fields: [userId], references: [id])
+  userId  String
+  album   Album    @relation(fields: [albumId], references: [id])
+  albumId String
+  savedAt DateTime @default(now())
+  @@unique([userId, albumId])
+}
+
+model Profile {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  name      String
+  bio       String?
+  avatar    String?
+  cover     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Genre {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+  tracks      Track[]
+  albums      Album[]
+}
+
+model Following {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  follower   User     @relation("Follower", fields: [followerId], references: [id])
+  followerId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Followers {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  following   User     @relation("Following", fields: [followingId], references: [id])
+  followingId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Play {
@@ -116,56 +146,55 @@ model Play {
   createdAt DateTime @default(now())
 }
 
-
 model Playlist {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  title           String
-  description     String?
-  cover           String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  creator         User           @relation(fields: [creatorId], references: [id])
-  creatorId       String
-  tracks          Track[]        // Tracks in this playlist
-  savedBy         User[]         @relation("SavedPlaylists")
-  publicStatus    ReviewStatus?  @default(NOT_REQUESTED)
-  tags            Tag[]
-  collaborators   User[]         @relation("Collaborators")
+  id            String          @id @default(dbgenerated("gen_random_uuid()"))
+  title         String
+  description   String?
+  cover         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  creator       User            @relation(fields: [creatorId], references: [id])
+  creatorId     String
+  tracks        Track[] // Tracks in this playlist
+  publicStatus  ReviewStatus?   @default(NOT_REQUESTED)
+  tags          Tag[]
+  collaborators User[]          @relation("Collaborators")
+  savedBy       SavedPlaylist[]
 }
 
 model Album {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  title           String
-  description     String?
-  cover           String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  genreId         String
-  genre           Genre          @relation(fields: [genreId], references: [id])
-  publicStatus    ReviewStatus?  @default(NOT_REQUESTED)
-  creator         User           @relation(fields: [creatorId], references: [id])
-  creatorId       String
-  tracks          Track[]        // Tracks in this album
-  savedBy         User[]         @relation("SavedAlbums")
-  tags            Tag[]
+  id           String        @id @default(dbgenerated("gen_random_uuid()"))
+  title        String
+  description  String?
+  cover        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  genreId      String
+  genre        Genre         @relation(fields: [genreId], references: [id])
+  publicStatus ReviewStatus? @default(NOT_REQUESTED)
+  creator      User          @relation(fields: [creatorId], references: [id])
+  creatorId    String
+  tracks       Track[] // Tracks in this album
+  tags         Tag[]
+  savedBy      SavedAlbum[]
 }
 
 model Tag {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  name            String         @unique
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  tracks          Track[]
-  playlists       Playlist[]
-  albums          Album[]
+  id        String     @id @default(dbgenerated("gen_random_uuid()"))
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  tracks    Track[]
+  playlists Playlist[]
+  albums    Album[]
 }
 
 model Membership {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  user            User           @relation(fields: [userId], references: [id])
-  userId          String
-  type            UserRole
-  expiresAt       DateTime
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      UserRole
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

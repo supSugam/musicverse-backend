@@ -133,44 +133,44 @@ export class TracksService {
     await this.prisma.track.deleteMany({});
     await this.firebaseService.deleteDirectory({ directory: '/track' });
   }
-
   async toggleLike(trackId: string, userId: string) {
-    const track = await this.prisma.track.findUnique({
-      where: { id: trackId },
-      select: { likedBy: { where: { id: userId } } },
+    const likedTrack = await this.prisma.likedTrack.findUnique({
+      where: {
+        userId_trackId: {
+          userId,
+          trackId,
+        },
+      },
     });
-    if (!track) throw new BadRequestException({ message: 'Track not found' });
 
-    if (track.likedBy.length) {
-      await this.prisma.track.update({
-        where: { id: trackId },
-        data: {
-          likedBy: {
-            disconnect: {
-              id: userId,
-            },
-          },
-        },
+    if (likedTrack) {
+      // User already liked the track, so unlike it
+      await this.prisma.likedTrack.delete({
+        where: { id: likedTrack.id },
       });
-      return { message: ['Track unliked.'] };
+      return { message: 'Track unliked.' };
     } else {
-      await this.prisma.track.update({
-        where: { id: trackId },
+      // User hasn't liked the track, so like it
+      await this.prisma.likedTrack.create({
         data: {
-          likedBy: {
-            connect: {
-              id: userId,
-            },
-          },
+          userId,
+          trackId,
         },
       });
-      return { message: ['Track liked.'] };
+
+      return { message: 'Track liked.' };
     }
   }
 
   async getLikedTracks(userId: string) {
     return await this.prisma.track.findMany({
-      where: { likedBy: { some: { id: userId } } },
+      where: {
+        likedBy: {
+          some: {
+            userId,
+          },
+        },
+      },
     });
   }
 }
