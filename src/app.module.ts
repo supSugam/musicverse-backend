@@ -16,6 +16,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { TracksModule } from './tracks/tracks.module';
 import { AlbumsModule } from './albums/albums.module';
 import { TagsModule } from './tags/tags.module';
+import { PlaylistsModule } from './playlists/playlists.module';
 @Module({
   imports: [
     PrismaModule,
@@ -54,6 +55,7 @@ import { TagsModule } from './tags/tags.module';
     TracksModule,
     AlbumsModule,
     TagsModule,
+    PlaylistsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
