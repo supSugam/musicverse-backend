@@ -178,7 +178,9 @@ export class TracksController {
             profile: true,
           },
         },
+        plays: true,
       },
+
       page,
       pageSize,
       where: {
@@ -196,9 +198,12 @@ export class TracksController {
         track['isLiked'] = likedTracks.some(
           (likedTrack) => likedTrack.id === track.id
         );
+        track['totalPlays'] = track.plays.length;
+        delete track.plays;
         return track;
       });
     }
+
     return res;
   }
 
