@@ -173,4 +173,12 @@ export class TracksService {
       },
     });
   }
+
+  async getTotalPlaysCount(trackId: string) {
+    return await this.prisma.play.count({
+      where: {
+        trackId,
+      },
+    });
+  }
 }
