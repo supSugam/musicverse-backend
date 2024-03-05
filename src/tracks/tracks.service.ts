@@ -174,6 +174,14 @@ export class TracksService {
     });
   }
 
+  async play(trackId: string) {
+    return await this.prisma.play.create({
+      data: {
+        trackId,
+      },
+    });
+  }
+
   async getTotalPlaysCount(trackId: string) {
     return await this.prisma.play.count({
       where: {

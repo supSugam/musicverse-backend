@@ -198,8 +198,7 @@ export class TracksController {
         track['isLiked'] = likedTracks.some(
           (likedTrack) => likedTrack.id === track.id
         );
-        track['totalPlays'] = track.plays.length;
-        delete track.plays;
+        track['plays'] = track.plays.length;
         return track;
       });
     }
@@ -314,5 +313,12 @@ export class TracksController {
   async getLikedTracks(@Request() req) {
     const userId = req.user.id as string;
     return await this.tracksService.getLikedTracks(userId);
+  }
+
+  //play
+
+  @Post('play/:id')
+  async play(@Param('id') id: string) {
+    return await this.tracksService.play(id);
   }
 }
