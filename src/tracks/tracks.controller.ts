@@ -193,7 +193,6 @@ export class TracksController {
     });
     if (userId) {
       const likedTracks = await this.tracksService.getLikedTracks(userId);
-      console.log('likedTracks', likedTracks);
       res.items = res.items.map((track) => {
         track['isLiked'] = likedTracks.some(
           (likedTrack) => likedTrack.id === track.id
