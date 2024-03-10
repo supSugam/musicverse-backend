@@ -22,8 +22,6 @@ export const FIREBASE_STORAGE_DIRS = {
   ALBUM_SRC: (albumId: string) => `album/${albumId}/src`,
   ALBUM_PREVIEW: (albumId: string) => `album/${albumId}/preview`,
   PLAYLIST_COVER: (playlistId: string) => `playlist/${playlistId}/cover`,
-  PLAYLIST_SRC: (playlistId: string) => `playlist/${playlistId}/src`,
-  PLAYLIST_PREVIEW: (playlistId: string) => `playlist/${playlistId}/preview`,
 };
 
 export const ALLOWED_IMAGE_MIMETYPES = ['image/png', 'image/jpg', 'image/jpeg'];
