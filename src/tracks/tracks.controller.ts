@@ -153,7 +153,6 @@ export class TracksController {
     )
     params: TrackPaginationDto
   ) {
-    const start = Date.now();
     const userId = req?.user?.id;
     const {
       page,

@@ -1,5 +1,4 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { SortOrder } from 'src/utils/enums/SortOrder.enum';
 import { TrackPaginationDto } from './dto/track-pagination.dto';
 import { getBasePaginationDto } from 'src/pagination/dto/pagination.decorator';
 

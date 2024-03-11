@@ -28,13 +28,18 @@ import {
 } from 'src/utils/constants';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { cleanObject } from 'src/utils/helpers/Object';
+import { PaginationService } from 'src/pagination/pagination.service';
+import { PlaylistPaginationDto } from './dto/playlist-pagination.dto';
+import { PlaylistsPaginationQueryParams } from './playlist-pagination.decorator';
 
 @Controller('playlists')
 export class PlaylistsController {
   constructor(
     private readonly playlistsService: PlaylistsService,
 
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly paginationService: PaginationService
   ) {}
 
   // @Post()
@@ -96,8 +101,94 @@ export class PlaylistsController {
   }
 
   @Get()
-  findAll() {
-    return this.playlistsService.findAll();
+  @UseGuards(AuthGuard)
+  async findAll(
+    @Request() req,
+    @PlaylistsPaginationQueryParams(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
+    )
+    params: PlaylistPaginationDto
+  ) {
+    const userId = req?.user?.id;
+    const {
+      page,
+      pageSize,
+      search,
+      sortOrder,
+      collaborators,
+      savedBy,
+      containsTrack,
+      creator,
+      ...rest
+    } = cleanObject(params);
+
+    const res = await this.paginationService.paginate({
+      modelName: 'Playlist',
+      where: {
+        title: {
+          contains: search,
+          mode: 'insensitive',
+        },
+        ...(containsTrack && {
+          tracks: {
+            some: {
+              id: containsTrack,
+            },
+          },
+        }),
+      },
+      include: {
+        ...rest,
+        ...(collaborators && {
+          collaborators: {
+            select: {
+              profile: true,
+            },
+          },
+        }),
+        ...(savedBy && {
+          savedBy: {
+            select: {
+              user: {
+                select: {
+                  profile: true,
+                },
+              },
+            },
+          },
+        }),
+        ...(creator && {
+          creator: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              role: true,
+              profile: true,
+            },
+          },
+        }),
+        _count: {
+          select: {
+            savedBy: true,
+            collaborators: true,
+            tracks: true,
+          },
+        },
+      },
+      page,
+      pageSize,
+    });
+    if (userId) {
+      const savedPlaylists =
+        await this.playlistsService.getSavedPlaylists(userId);
+      res.items = res.items.map((playlist) => {
+        playlist['isSaved'] = savedPlaylists.some((p) => p.id === playlist.id);
+        return playlist;
+      });
+    }
+
+    return res;
   }
 
   @Get(':id')
@@ -116,5 +207,34 @@ export class PlaylistsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.playlistsService.remove(+id);
+  }
+  // await api.post(`/playlists/toggle-track/${trackId}`, { playlists }),
+
+  @Post('remove-track/:trackId')
+  @UseGuards(AuthGuard)
+  async removeTrack(
+    @Request() req,
+    @Param('trackId') trackId: string,
+    @Body('playlists') playlists: string[]
+  ) {
+    return this.playlistsService.removeTracksFromPlaylist({
+      trackId,
+      playlists,
+      userId: req.user.id,
+    });
+  }
+
+  @Post('add-track/:trackId')
+  @UseGuards(AuthGuard)
+  async addTrack(
+    @Request() req,
+    @Param('trackId') trackId: string,
+    @Body('playlists') playlists: string[]
+  ) {
+    return this.playlistsService.addTrackToPlaylists({
+      trackId,
+      playlists,
+      userId: req.user.id,
+    });
   }
 }
