@@ -175,6 +175,7 @@ export class TracksService {
   }
 
   async play(trackId: string) {
+    console.log('trackId', trackId);
     return await this.prisma.play.create({
       data: {
         trackId,

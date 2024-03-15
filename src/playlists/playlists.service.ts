@@ -44,9 +44,11 @@ export class PlaylistsService {
             id: creatorId,
           },
         },
-        tags: {
-          connect: tags.map((tagId) => ({ id: tagId })),
-        },
+        ...(tags && {
+          tags: {
+            connect: tags.map((tagId) => ({ id: tagId })),
+          },
+        }),
       },
     });
   }
