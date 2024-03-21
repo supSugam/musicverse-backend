@@ -13,6 +13,7 @@ import {
   UploadedFiles,
   ParseFilePipeBuilder,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { PlaylistsService } from './playlists.service';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
@@ -119,23 +120,29 @@ export class PlaylistsController {
       savedBy,
       containsTrack,
       creator,
+      owned,
+      collaborated,
+      saved,
       ...rest
     } = cleanObject(params);
 
     const res = await this.paginationService.paginate({
       modelName: 'Playlist',
       where: {
-        title: {
-          contains: search,
-          mode: 'insensitive',
-        },
-        ...(containsTrack && {
-          tracks: {
-            some: {
-              id: containsTrack,
-            },
+        AND: [
+          {
+            ...(search && {
+              title: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            }),
+            ...(owned && { creatorId: userId }),
+            ...(saved && { savedBy: { some: { userId } } }),
+            ...(collaborated && { collaborators: { some: { id: userId } } }),
+            ...(containsTrack && { tracks: { some: { id: containsTrack } } }),
           },
-        }),
+        ],
       },
       include: {
         ...rest,
@@ -187,13 +194,22 @@ export class PlaylistsController {
         return playlist;
       });
     }
+    console.log(res.items.length, 'res.items.length');
 
     return res;
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.playlistsService.findOne(+id);
+  findOne(
+    @Param('id') id: string,
+    @Query('tracks') tracks: boolean,
+    @Query('collaborators') collaborators: boolean
+  ) {
+    const include = {
+      tracks,
+      collaborators,
+    };
+    return this.playlistsService.findOne(id, include);
   }
 
   @Patch(':id')

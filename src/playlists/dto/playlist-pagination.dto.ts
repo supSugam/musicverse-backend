@@ -27,6 +27,18 @@ export class PlaylistPaginationDto extends BasePaginationDto {
   @IsOptional()
   containsTrack?: string;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  owned?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  saved?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  collaborated?: boolean;
+
   //   @ApiProperty({ required: false })
   //   @IsOptional()
   //   selectedGenre?: string;

@@ -14,6 +14,9 @@ export const PlaylistsPaginationQueryParams = createParamDecorator(
       tracks: Boolean(request.query.tracks),
       collaborators: Boolean(request.query.collaborators),
       containsTrack: request.query.containsTrack,
+      owned: Boolean(request.query.owned),
+      saved: Boolean(request.query.saved),
+      collaborated: Boolean(request.query.collaborated),
     };
   }
 );

@@ -10,6 +10,7 @@ import {
 import { cleanObject } from 'src/utils/helpers/Object';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PlaylistsService {
@@ -57,8 +58,21 @@ export class PlaylistsService {
     return `This action returns all playlists`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} playlist`;
+  findOne(id: string, include: Prisma.PlaylistInclude) {
+    try {
+      return this.prisma.playlist.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          _count: true,
+          ...include,
+          tracks: true,
+        },
+      });
+    } catch (e) {
+      throw new BadRequestException(e);
+    }
   }
 
   async update(id: string, updatePlaylistPayload: UpdatePlaylistPayload) {
