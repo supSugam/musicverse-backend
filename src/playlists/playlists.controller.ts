@@ -224,7 +224,6 @@ export class PlaylistsController {
   remove(@Param('id') id: string) {
     return this.playlistsService.remove(+id);
   }
-  // await api.post(`/playlists/toggle-track/${trackId}`, { playlists }),
 
   @Post('remove-track/:trackId')
   @UseGuards(AuthGuard)
