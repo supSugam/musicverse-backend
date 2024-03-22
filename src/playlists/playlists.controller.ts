@@ -205,11 +205,32 @@ export class PlaylistsController {
     @Query('tracks') tracks: boolean,
     @Query('collaborators') collaborators: boolean
   ) {
-    const include = {
-      tracks,
-      collaborators,
-    };
-    return this.playlistsService.findOne(id, include);
+    return this.playlistsService.findOne(id, {
+      ...(tracks && {
+        tracks: {
+          select: {
+            id: true,
+            title: true,
+            creator: {
+              include: {
+                profile: true,
+              },
+            },
+            trackDuration: true,
+            trackSize: true,
+            src: true,
+            cover: true,
+          },
+        },
+      }),
+      ...(collaborators && {
+        collaborators: {
+          select: {
+            profile: true,
+          },
+        },
+      }),
+    });
   }
 
   @Patch(':id')
