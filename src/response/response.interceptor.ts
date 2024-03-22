@@ -54,7 +54,7 @@ export class ResponseInterceptor implements NestInterceptor {
         ? this.extractPrismaErrorMessage(exception)
         : isHttpException || isError
           ? this.extractErrorMessage(exception)
-          : 'Internal Server Error',
+          : ['Internal Server Error'],
       ...(isPrismaClientKnownRequestError && {
         code: exception.code,
         meta: exception.meta,

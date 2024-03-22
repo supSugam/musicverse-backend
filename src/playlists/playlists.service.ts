@@ -19,6 +19,13 @@ export class PlaylistsService {
     private firebaseService: FirebaseService
   ) {}
 
+  /**
+   *
+   *
+   * @param {CreatePlaylistPayload} createPlaylistPayload
+   * @return {*}
+   * @memberof PlaylistsService
+   */
   async create(createPlaylistPayload: CreatePlaylistPayload) {
     const { creatorId, title, tags, ...rest } = cleanObject(
       createPlaylistPayload
@@ -54,10 +61,6 @@ export class PlaylistsService {
     });
   }
 
-  findAll() {
-    return `This action returns all playlists`;
-  }
-
   findOne(id: string, include: Prisma.PlaylistInclude) {
     try {
       return this.prisma.playlist.findUnique({
@@ -67,7 +70,6 @@ export class PlaylistsService {
         include: {
           _count: true,
           ...include,
-          tracks: true,
         },
       });
     } catch (e) {
@@ -76,29 +78,37 @@ export class PlaylistsService {
   }
 
   async update(id: string, updatePlaylistPayload: UpdatePlaylistPayload) {
-    const { tags, ...rest } = cleanObject(updatePlaylistPayload);
+    const { tags, creatorId, ...rest } = updatePlaylistPayload;
 
-    try {
-      return await this.prisma.playlist.update({
-        where: {
-          id: id,
-        },
-        data: {
-          ...rest,
-          ...(tags && {
-            tags: {
-              set: tags.map((tagId) => ({ id: tagId })),
-            },
-          }),
-        },
-      });
-    } catch (e) {
-      throw new BadRequestException(e);
+    const playlist = await this.prisma.playlist.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!playlist) {
+      throw new BadRequestException('Playlist not found');
     }
-  }
 
-  remove(id: number) {
-    return `This action removes a #${id} playlist`;
+    if (playlist.creatorId !== creatorId) {
+      throw new BadRequestException(
+        'You are not allowed to update the playlist'
+      );
+    }
+
+    return await this.prisma.playlist.update({
+      where: {
+        id,
+      },
+      data: {
+        ...rest,
+        ...(tags && {
+          tags: {
+            set: tags.map((tagId) => ({ id: tagId })),
+          },
+        }),
+      },
+    });
   }
 
   async getSavedPlaylists(userId: string) {
@@ -111,6 +121,43 @@ export class PlaylistsService {
         },
       },
     });
+  }
+
+  /**
+   *
+   *
+   * @param {string} playlistId
+   * @param {string} userId
+   * @return {*}
+   * @memberof PlaylistsService
+   */
+  async remove(playlistId: string, userId: string) {
+    const playlist = await this.prisma.playlist.findUnique({
+      where: {
+        id: playlistId,
+      },
+    });
+
+    if (!playlist) {
+      throw new BadRequestException('Playlist not found');
+    }
+
+    if (playlist.creatorId !== userId) {
+      throw new BadRequestException(
+        'You are not allowed to delete the playlist'
+      );
+    }
+
+    try {
+      await this.prisma.playlist.delete({
+        where: {
+          id: playlistId,
+        },
+      });
+    } catch (e) {
+      throw new BadRequestException(e);
+    }
+    return { message: 'Playlist deleted' };
   }
 
   async getOwnedPlaylists(userId: string) {
@@ -214,7 +261,7 @@ export class PlaylistsService {
     return { message: 'Tracks added to playlist' };
   }
 
-  async removeTracksFromPlaylist({
+  async removeTrackFromPlaylists({
     trackId,
     playlists,
     userId,
@@ -296,6 +343,97 @@ export class PlaylistsService {
             tracks: {
               disconnect: {
                 id: trackId,
+              },
+            },
+          },
+        });
+      }
+    } catch (e) {
+      throw new BadRequestException(e);
+    }
+    return { message: 'Tracks removed from playlist' };
+  }
+
+  async removeTracksFromPlaylist({
+    tracks,
+    playlistId,
+    userId,
+  }: {
+    tracks: string[];
+    playlistId: string;
+    userId: string;
+  }) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const playlist = await this.prisma.playlist.findUnique({
+      where: {
+        id: playlistId,
+      },
+    });
+
+    if (!playlist) {
+      throw new BadRequestException('Playlist not found');
+    }
+
+    const userPlaylists = await this.prisma.playlist.findMany({
+      where: {
+        id: playlistId,
+        OR: [
+          {
+            creatorId: userId,
+          },
+          {
+            collaborators: {
+              some: {
+                id: userId,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    if (!userPlaylists.length) {
+      throw new BadRequestException(
+        'You are not allowed to remove tracks from the playlist'
+      );
+    }
+
+    const trackPlaylists = await this.prisma.playlist.findMany({
+      where: {
+        id: playlistId,
+        tracks: {
+          some: {
+            id: {
+              in: tracks,
+            },
+          },
+        },
+      },
+    });
+
+    if (!trackPlaylists.length) {
+      throw new BadRequestException('Tracks do not exist in the playlist');
+    }
+
+    try {
+      for (const track of tracks) {
+        await this.prisma.playlist.update({
+          where: {
+            id: playlistId,
+          },
+          data: {
+            tracks: {
+              disconnect: {
+                id: track,
               },
             },
           },

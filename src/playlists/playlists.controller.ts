@@ -17,7 +17,10 @@ import {
 } from '@nestjs/common';
 import { PlaylistsService } from './playlists.service';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
-import { UpdatePlaylistDto } from './dto/update-playlist.dto';
+import {
+  UpdatePlaylistDto,
+  UpdatePlaylistPayload,
+} from './dto/update-playlist.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ApiConsumes } from '@nestjs/swagger';
 import { Role } from 'src/guards/roles.enum';
@@ -200,13 +203,16 @@ export class PlaylistsController {
   }
 
   @Get(':id')
-  findOne(
+  async findOne(
     @Param('id') id: string,
     @Query('tracks') tracks: boolean,
     @Query('collaborators') collaborators: boolean
   ) {
-    return this.playlistsService.findOne(id, {
-      ...(tracks && {
+    const tracksBool = Boolean(tracks);
+    const collaboratorsBool = Boolean(collaborators);
+
+    return await this.playlistsService.findOne(id, {
+      ...(tracksBool && {
         tracks: {
           select: {
             id: true,
@@ -223,7 +229,7 @@ export class PlaylistsController {
           },
         },
       }),
-      ...(collaborators && {
+      ...(collaboratorsBool && {
         collaborators: {
           select: {
             profile: true,
@@ -234,18 +240,80 @@ export class PlaylistsController {
   }
 
   @Patch(':id')
-  update(
+  @UseGuards(AuthGuard)
+  @ApiConsumes('multipart/form-data')
+  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'cover', maxCount: 1 }]))
+  async update(
     @Param('id') id: string,
-    @Body() updatePlaylistDto: UpdatePlaylistDto
+    @Request() req,
+    @Body(new ValidationPipe({ transform: true, whitelist: true }))
+    updatePlaylistDto: UpdatePlaylistDto,
+    @UploadedFiles(
+      new ParseFilePipeBuilder()
+        .addValidator(
+          new CustomUploadFileValidator({
+            cover: {
+              fileTypes: ALLOWED_IMAGE_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 2,
+            },
+          })
+        )
+        .build({
+          fileIsRequired: false,
+          errorHttpStatusCode: HttpStatus.BAD_REQUEST,
+        })
+    )
+    files: {
+      cover?: Express.Multer.File[];
+    }
   ) {
-    return this.playlistsService.update(id, updatePlaylistDto);
+    const coverFile = files?.cover?.[0];
+    console.log(coverFile, 'coverFile');
+    const { deleteCover, ...rest } = cleanObject(updatePlaylistDto);
+    const payload: UpdatePlaylistPayload = {
+      creatorId: req.user.id as string,
+      ...rest,
+    };
+    const shouldDeleteCover = deleteCover === 'true';
+
+    if (shouldDeleteCover) {
+      await this.firebaseService.deleteFile({
+        directory: FIREBASE_STORAGE_DIRS.PLAYLIST_COVER(id),
+        fileName: id,
+      });
+      payload.cover = null;
+    } else {
+      if (coverFile) {
+        await this.firebaseService.deleteFile({
+          directory: FIREBASE_STORAGE_DIRS.PLAYLIST_COVER(id),
+          fileName: id,
+        });
+        const coverUrl = await this.firebaseService.uploadFile({
+          directory: FIREBASE_STORAGE_DIRS.PLAYLIST_COVER(id),
+          fileBuffer: coverFile.buffer,
+          fileName: id,
+          fileType: 'image',
+          originalFilename: coverFile.originalname,
+        });
+        console.log(coverUrl, 'coverUrl');
+        payload.cover = coverUrl;
+      }
+    }
+
+    const playlist = await this.playlistsService.update(id, payload);
+
+    return playlist;
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.playlistsService.remove(+id);
+  @UseGuards(AuthGuard)
+  async remove(@Request() req, @Param('id') id: string) {
+    const userId = req.user.id;
+    return await this.playlistsService.remove(id, userId);
   }
 
+  // To remove single track from multiple playlists
   @Post('remove-track/:trackId')
   @UseGuards(AuthGuard)
   async removeTrack(
@@ -253,13 +321,14 @@ export class PlaylistsController {
     @Param('trackId') trackId: string,
     @Body('playlists') playlists: string[]
   ) {
-    return this.playlistsService.removeTracksFromPlaylist({
+    return this.playlistsService.removeTrackFromPlaylists({
       trackId,
       playlists,
       userId: req.user.id,
     });
   }
 
+  // To add single track to multiple playlists
   @Post('add-track/:trackId')
   @UseGuards(AuthGuard)
   async addTrack(
@@ -270,6 +339,21 @@ export class PlaylistsController {
     return this.playlistsService.addTrackToPlaylists({
       trackId,
       playlists,
+      userId: req.user.id,
+    });
+  }
+
+  // To remove multiple tracks from a playlist
+  @Post('remove-tracks/:playlistId')
+  @UseGuards(AuthGuard)
+  async removeTracks(
+    @Request() req,
+    @Param('playlistId') playlistId: string,
+    @Body('tracks') tracks: string[]
+  ) {
+    return this.playlistsService.removeTracksFromPlaylist({
+      tracks,
+      playlistId,
       userId: req.user.id,
     });
   }
