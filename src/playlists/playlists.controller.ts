@@ -357,4 +357,13 @@ export class PlaylistsController {
       userId: req.user.id,
     });
   }
+
+  @Post('toggle-save/:playlistId')
+  @UseGuards(AuthGuard)
+  async toggleSave(@Request() req, @Param('playlistId') playlistId: string) {
+    return this.playlistsService.toggleSave({
+      playlistId,
+      userId: req.user.id,
+    });
+  }
 }

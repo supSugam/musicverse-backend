@@ -444,4 +444,73 @@ export class PlaylistsService {
     }
     return { message: 'Tracks removed from playlist' };
   }
+
+  async toggleSave({
+    playlistId,
+    userId,
+  }: {
+    playlistId: string;
+    userId: string;
+  }) {
+    const playlist = await this.prisma.playlist.findUnique({
+      where: {
+        id: playlistId,
+      },
+    });
+
+    if (!playlist) {
+      throw new BadRequestException('Playlist not found');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const savedPlaylist = await this.prisma.playlist.findFirst({
+      where: {
+        id: playlistId,
+        savedBy: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+    });
+
+    if (savedPlaylist) {
+      await this.prisma.playlist.update({
+        where: {
+          id: playlistId,
+        },
+        data: {
+          savedBy: {
+            disconnect: {
+              id: userId,
+            },
+          },
+        },
+      });
+      return { message: 'Playlist Unsaved' };
+    } else {
+      await this.prisma.playlist.update({
+        where: {
+          id: playlistId,
+        },
+        data: {
+          savedBy: {
+            connect: {
+              id: userId,
+            },
+          },
+        },
+      });
+      return { message: 'Playlist Saved' };
+    }
+  }
 }
