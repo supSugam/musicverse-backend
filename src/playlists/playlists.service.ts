@@ -469,7 +469,7 @@ export class PlaylistsService {
     });
 
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException('User Not Found');
     }
 
     const savedPlaylist = await this.prisma.playlist.findFirst({
