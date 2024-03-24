@@ -459,7 +459,7 @@ export class PlaylistsService {
     });
 
     if (!playlist) {
-      throw new BadRequestException('Playlist not found');
+      throw new BadRequestException('Playlist Not Found');
     }
 
     const user = await this.prisma.user.findUnique({
