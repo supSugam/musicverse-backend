@@ -12,6 +12,8 @@ export const AlbumsPaginationQueryParams = createParamDecorator(
       tags: Boolean(request.query.tags),
       tracks: Boolean(request.query.tracks),
       savedBy: Boolean(request.query.likedBy),
+      owned: Boolean(request.query.owned),
+      saved: Boolean(request.query.saved),
     };
   }
 );

@@ -22,4 +22,12 @@ export class AlbumPaginationDto extends BasePaginationDto {
   @ApiProperty({ required: false })
   @IsOptional()
   savedBy?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  owned?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  saved?: boolean;
 }

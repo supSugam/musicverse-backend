@@ -95,35 +95,69 @@ export class AlbumsController {
 
   @Get()
   async findAll(
+    @Request() req,
     @AlbumsPaginationQueryParams(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
     )
     params: AlbumPaginationDto
   ) {
-    const { page, pageSize, search, sortOrder, ...rest } = cleanObject(params);
+    const userId = req.user.id as string;
+    const {
+      page,
+      pageSize,
+      search,
+      sortOrder,
+      creator,
+      savedBy,
+      saved,
+      owned,
+      ...rest
+    } = cleanObject(params);
     return await this.paginationService.paginate({
       modelName: 'Album',
       include: {
         ...rest,
-        creator: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            role: true,
-            profile: true,
+        ...(creator && {
+          creator: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              role: true,
+              profile: true,
+            },
           },
-        },
+        }),
+        ...(savedBy && {
+          savedBy: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  profile: true,
+                },
+              },
+            },
+          },
+        }),
       },
       page,
       pageSize,
-      where: search ? { title: search } : {},
+      where: {
+        ...(search && { title: search }),
+        ...(saved && { savedBy: { some: { id: userId } } }),
+        ...(owned
+          ? { creatorId: userId }
+          : saved
+            ? { savedBy: { some: { id: userId } } }
+            : {}),
+      },
     });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.albumsService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    return await this.albumsService.findOne(id);
   }
 
   @Patch(':id')
@@ -135,14 +169,13 @@ export class AlbumsController {
   @UseGuards(AuthGuard)
   @UserRoles(Role.ADMIN)
   async remove(@Param('id') id: string) {
-    await this.albumsService.remove(id);
-    return { message: ['Album deleted successfully'] };
+    return await this.albumsService.remove(id);
   }
-  @Delete()
+
+  @Post('toggle-save/:albumId')
   @UseGuards(AuthGuard)
-  @UserRoles(Role.ADMIN)
-  async removeAll() {
-    await this.albumsService.removeAll();
-    return { message: ['All albums deleted successfully'] };
+  async toggleSave(@Request() req, @Param('albumId') albumId: string) {
+    const userId = req.user.id as string;
+    return this.albumsService.toggleSaveAlbum(userId, albumId);
   }
 }

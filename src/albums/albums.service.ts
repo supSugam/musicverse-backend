@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -56,8 +60,32 @@ export class AlbumsService {
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} album`;
+  async findOne(id: string) {
+    const album = await this.prisma.album.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        _count: true,
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+          },
+        },
+        genre: true,
+        tags: true,
+        tracks: true,
+      },
+    });
+
+    if (!album) {
+      throw new NotFoundException({ message: [`Album doesn't exist`] });
+    } else {
+      return album;
+    }
   }
 
   update(id: string, updateAlbumDto: UpdateAlbumDto) {
@@ -82,12 +110,54 @@ export class AlbumsService {
       });
       await this.firebaseService.deleteDirectory({ directory: `album/${id}` });
     } catch (error) {
-      throw new BadRequestException({ message: 'Album not found' });
+      throw new BadRequestException({ message: ['Album not found'] });
     }
   }
 
-  async removeAll() {
-    await this.prisma.album.deleteMany();
-    await this.firebaseService.deleteDirectory({ directory: '/album' });
+  async toggleSaveAlbum(userId: string, albumId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        savedAlbums: true,
+      },
+    });
+
+    const album = await this.prisma.album.findUnique({
+      where: { id: albumId },
+    });
+
+    if (!user || !album) {
+      throw new BadRequestException('User or Album not found');
+    }
+
+    const isAlbumSaved = user.savedAlbums.some(
+      (savedAlbum) => savedAlbum.id === albumId
+    );
+
+    if (isAlbumSaved) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          savedAlbums: {
+            disconnect: {
+              id: albumId,
+            },
+          },
+        },
+      });
+      return { message: ['Album Unsaved'] };
+    } else {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          savedAlbums: {
+            connect: {
+              id: albumId,
+            },
+          },
+        },
+      });
+      return { message: ['Album Unsaved'] };
+    }
   }
 }
