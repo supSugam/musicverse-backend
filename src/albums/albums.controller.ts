@@ -94,6 +94,7 @@ export class AlbumsController {
   }
 
   @Get()
+  @UseGuards(AuthGuard)
   async findAll(
     @Request() req,
     @AlbumsPaginationQueryParams(
@@ -111,12 +112,28 @@ export class AlbumsController {
       savedBy,
       saved,
       owned,
+      tracks,
       ...rest
     } = cleanObject(params);
     return await this.paginationService.paginate({
       modelName: 'Album',
       include: {
         ...rest,
+        ...(tracks && {
+          tracks: {
+            include: {
+              creator: {
+                select: {
+                  id: true,
+                  username: true,
+                  email: true,
+                  role: true,
+                  profile: true,
+                },
+              },
+            },
+          },
+        }),
         ...(creator && {
           creator: {
             select: {
@@ -140,6 +157,7 @@ export class AlbumsController {
             },
           },
         }),
+        _count: true,
       },
       page,
       pageSize,

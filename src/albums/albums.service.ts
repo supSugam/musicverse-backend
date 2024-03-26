@@ -49,16 +49,6 @@ export class AlbumsService {
     });
   }
 
-  async findAll() {
-    return await this.prisma.album.findMany({
-      include: {
-        creator: true,
-        genre: true,
-        tags: true,
-        tracks: true,
-      },
-    });
-  }
 
   async findOne(id: string) {
     const album = await this.prisma.album.findUnique({

@@ -102,6 +102,8 @@ export class TracksController {
       });
     }
 
+    console.log('payload', payload);
+
     const { id: trackId } = await this.tracksService.create(payload);
 
     const uploaded = {};
