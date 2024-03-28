@@ -49,7 +49,6 @@ export class AlbumsService {
     });
   }
 
-
   async findOne(id: string) {
     const album = await this.prisma.album.findUnique({
       where: {
@@ -95,10 +94,11 @@ export class AlbumsService {
 
   async remove(id: string) {
     try {
-      await this.prisma.album.delete({
+      const deleteAlbum = await this.prisma.album.delete({
         where: { id },
       });
       await this.firebaseService.deleteDirectory({ directory: `album/${id}` });
+      return deleteAlbum;
     } catch (error) {
       throw new BadRequestException({ message: ['Album not found'] });
     }
@@ -106,48 +106,47 @@ export class AlbumsService {
 
   async toggleSaveAlbum(userId: string, albumId: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        savedAlbums: true,
+      where: {
+        id: userId,
       },
     });
 
-    const album = await this.prisma.album.findUnique({
-      where: { id: albumId },
-    });
-
-    if (!user || !album) {
-      throw new BadRequestException('User or Album not found');
+    if (!user) {
+      throw new BadRequestException({ message: ['User not found'] });
     }
 
-    const isAlbumSaved = user.savedAlbums.some(
-      (savedAlbum) => savedAlbum.id === albumId
-    );
+    const album = await this.prisma.savedAlbum.findUnique({
+      where: {
+        userId_albumId: {
+          userId,
+          albumId,
+        },
+      },
+    });
 
-    if (isAlbumSaved) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          savedAlbums: {
-            disconnect: {
-              id: albumId,
-            },
-          },
+    if (album) {
+      await this.prisma.savedAlbum.delete({
+        where: {
+          id: album.id,
         },
       });
-      return { message: ['Album Unsaved'] };
+      return { message: 'Album Unsaved' };
     } else {
-      await this.prisma.user.update({
-        where: { id: userId },
+      await this.prisma.savedAlbum.create({
         data: {
-          savedAlbums: {
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          album: {
             connect: {
               id: albumId,
             },
           },
         },
       });
-      return { message: ['Album Unsaved'] };
+      return { message: 'Album Saved' };
     }
   }
 }

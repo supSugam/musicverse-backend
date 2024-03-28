@@ -115,6 +115,7 @@ export class AlbumsController {
       tracks,
       ...rest
     } = cleanObject(params);
+
     return await this.paginationService.paginate({
       modelName: 'Album',
       include: {
@@ -167,7 +168,13 @@ export class AlbumsController {
         ...(owned
           ? { creatorId: userId }
           : saved
-            ? { savedBy: { some: { id: userId } } }
+            ? {
+                savedBy: {
+                  some: {
+                    userId,
+                  },
+                },
+              }
             : {}),
       },
     });
@@ -190,10 +197,10 @@ export class AlbumsController {
     return await this.albumsService.remove(id);
   }
 
-  @Post('toggle-save/:albumId')
+  @Patch('toggle-save/:albumId')
   @UseGuards(AuthGuard)
   async toggleSave(@Request() req, @Param('albumId') albumId: string) {
     const userId = req.user.id as string;
-    return this.albumsService.toggleSaveAlbum(userId, albumId);
+    return await this.albumsService.toggleSaveAlbum(userId, albumId);
   }
 }

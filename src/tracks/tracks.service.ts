@@ -174,11 +174,11 @@ export class TracksService {
     });
   }
 
-  async play(trackId: string) {
-    console.log('trackId', trackId);
+  async play(trackId: string, userId: string) {
     return await this.prisma.play.create({
       data: {
         trackId,
+        userId,
       },
     });
   }
@@ -187,6 +187,15 @@ export class TracksService {
     return await this.prisma.play.count({
       where: {
         trackId,
+      },
+    });
+  }
+
+  async download(trackId: string, userId: string) {
+    return await this.prisma.download.create({
+      data: {
+        trackId,
+        userId,
       },
     });
   }

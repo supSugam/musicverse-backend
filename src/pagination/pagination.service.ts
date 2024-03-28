@@ -24,7 +24,7 @@ export class PaginationService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async paginate<ModelName extends ModelNames>({
-    page,
+    page = '1',
     pageSize,
     modelName,
     where,
@@ -35,7 +35,7 @@ export class PaginationService {
       const db = this.prismaService[modelName as string];
       // This is equivalent to: this.prismaService.track (assuming modelName is 'track')
 
-      if (!page || !pageSize) {
+      if (!pageSize) {
         const items = await db.findMany({
           where: where || {},
           orderBy: orderBy || {
@@ -49,7 +49,7 @@ export class PaginationService {
         };
       }
 
-      const skip = (+page - 1) * +pageSize;
+      const skip = (Number(page) - 1) * Number(pageSize);
 
       const totalCount = await db.count({
         where,
@@ -59,7 +59,8 @@ export class PaginationService {
         where,
         orderBy,
         skip,
-        take: pageSize,
+        take: Number(pageSize),
+        include: include || {},
       });
 
       return {

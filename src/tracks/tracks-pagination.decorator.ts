@@ -15,6 +15,9 @@ export const TracksPaginationQueryParams = createParamDecorator(
       tags: Boolean(request.query.tags),
       selectedGenre: request.query.selectedGenre,
       selectedTag: request.query.selectedTag,
+      liked: Boolean(request.query.liked),
+      owned: Boolean(request.query.owned),
+      creatorId: request.query.creatorId,
     };
   }
 );

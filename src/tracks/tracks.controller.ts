@@ -163,6 +163,9 @@ export class TracksController {
       sortOrder,
       selectedGenre,
       selectedTag,
+      creatorId,
+      liked,
+      owned,
       ...rest
     } = cleanObject(params);
 
@@ -189,6 +192,15 @@ export class TracksController {
           ...(selectedGenre && { genreId: selectedGenre }),
           ...(selectedTag && { tags: { some: { id: selectedTag } } }),
           ...(search && { title: { contains: search, mode: 'insensitive' } }),
+          ...(creatorId && { creatorId }),
+          ...(liked && {
+            likedBy: {
+              some: {
+                userId,
+              },
+            },
+          }),
+          ...(owned && { creatorId: userId }),
         },
       },
     });
@@ -198,10 +210,14 @@ export class TracksController {
         track['isLiked'] = likedTracks.some(
           (likedTrack) => likedTrack.id === track.id
         );
-        track['plays'] = track.plays.length;
         return track;
       });
     }
+
+    res.items = res.items.map((track) => {
+      track['plays'] = track?.plays?.length || 0;
+      return track;
+    });
 
     return res;
   }
@@ -318,7 +334,19 @@ export class TracksController {
   //play
 
   @Post('play/:id')
-  async play(@Param('id') id: string) {
-    return await this.tracksService.play(id);
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
+  async play(@Request() req, @Param('id') trackId: string) {
+    const userId = req.user.id as string;
+    return await this.tracksService.play(trackId, userId);
+  }
+
+  // download
+  @Post('download/:id')
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
+  async download(@Request() req, @Param('id') trackId: string) {
+    const userId = req.user.id as string;
+    return await this.tracksService.download(trackId, userId);
   }
 }
