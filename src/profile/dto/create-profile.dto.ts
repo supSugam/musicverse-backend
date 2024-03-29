@@ -11,12 +11,4 @@ export class CreateProfileDto {
   @ApiProperty()
   @IsOptional()
   bio?: string;
-
-  @ApiProperty({ type: 'string', format: 'binary' })
-  @IsOptional()
-  avatar?: string;
-
-  @ApiProperty({ type: 'string', format: 'binary' })
-  @IsOptional()
-  cover?: string;
 }

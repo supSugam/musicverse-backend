@@ -187,6 +187,7 @@ export class AlbumsController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAlbumDto: UpdateAlbumDto) {
+    //TODO: this should be similar to the create method
     return this.albumsService.update(id, updateAlbumDto);
   }
 

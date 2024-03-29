@@ -16,6 +16,7 @@ import {
   HttpStatus,
   MaxFileSizeValidator,
   ParseFilePipeBuilder,
+  HttpException,
 } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
