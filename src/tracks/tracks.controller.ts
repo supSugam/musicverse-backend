@@ -182,7 +182,7 @@ export class TracksController {
             profile: true,
           },
         },
-        plays: true,
+        _count: true,
       },
 
       page,
@@ -214,18 +214,15 @@ export class TracksController {
       });
     }
 
-    res.items = res.items.map((track) => {
-      track['plays'] = track?.plays?.length || 0;
-      return track;
-    });
-
     return res;
   }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return await this.tracksService.findOne(id);
-  // }
+  @Get(':id')
+  @UseGuards(AuthGuard)
+  async findOne(@Request() req, @Param('id') trackId: string) {
+    const userId: string | undefined = req.user.id;
+    return await this.tracksService.findOne(trackId, userId);
+  }
 
   @Patch(':id')
   @UseGuards(AuthGuard)
@@ -336,9 +333,10 @@ export class TracksController {
   @Post('play/:id')
   @UseGuards(AuthGuard)
   @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
-  async play(@Request() req, @Param('id') trackId: string) {
+  async play(@Request() req, @Param('id') id: string) {
+    console.log('play trackId', id);
     const userId = req.user.id as string;
-    return await this.tracksService.play(trackId, userId);
+    return await this.tracksService.play(id, userId);
   }
 
   // download

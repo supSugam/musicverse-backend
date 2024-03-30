@@ -56,6 +56,35 @@ export class TracksService {
     });
   }
 
+  async findOne(trackId: string, userId?: string) {
+    const res = await this.prisma.track.findUnique({
+      where: { id: trackId },
+      include: {
+        creator: true,
+        genre: true,
+        tags: true,
+        _count: true,
+        plays: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+    if (userId && res) {
+      const likedTrack = await this.prisma.likedTrack.findUnique({
+        where: {
+          userId_trackId: {
+            userId,
+            trackId,
+          },
+        },
+      });
+      res['isLiked'] = !!likedTrack;
+    }
+    return res;
+  }
+
   async findAll() {
     return await this.prisma.track.findMany({
       include: {
@@ -175,6 +204,13 @@ export class TracksService {
   }
 
   async play(trackId: string, userId: string) {
+    const totalPlays = await this.prisma.play.count({
+      where: {
+        trackId,
+        userId,
+      },
+    });
+    console.log(totalPlays);
     return await this.prisma.play.create({
       data: {
         trackId,
