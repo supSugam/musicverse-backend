@@ -210,10 +210,10 @@ export class TracksController {
         track['isLiked'] = likedTracks.some(
           (likedTrack) => likedTrack.id === track.id
         );
+        console.log('track', track._count);
         return track;
       });
     }
-
     return res;
   }
 

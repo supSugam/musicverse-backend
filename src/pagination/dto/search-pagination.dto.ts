@@ -5,6 +5,8 @@ import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
 export class SearchPaginationDto extends BasePaginationDto {
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsEnum(['all', 'tracks', 'albums', 'playlists', 'users', 'genres', 'tags'])
+  @IsEnum(['all', 'tracks', 'albums', 'playlists', 'users', 'artists'], {
+    message: 'Invalid type',
+  })
   type?: string = 'all';
 }

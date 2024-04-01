@@ -7,14 +7,17 @@ import {
 } from '@nestjs/common';
 import { PaginationService } from './pagination.service';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { TracksPaginationQueryParams } from 'src/tracks/tracks-pagination.decorator';
-import { BasePaginationDto } from './dto/pagination.dto';
 import { SearchPaginationQueryParams } from './dto/search-pagination.decorator';
 import { SearchPaginationDto } from './dto/search-pagination.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { cleanObject } from 'src/utils/helpers/Object';
 
 @Controller('search')
 export class PaginationController {
-  constructor(private readonly PaginationService: PaginationService) {}
+  constructor(
+    private readonly paginationService: PaginationService,
+    private readonly prismaService: PrismaService
+  ) {}
 
   @Get()
   @UseGuards(AuthGuard)
@@ -30,14 +33,29 @@ export class PaginationController {
     // Most Popular Tracks
     const response = {};
 
+    const creator = {
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        profile: {
+          select: {
+            avatar: true,
+            cover: true,
+            name: true,
+            id: true,
+          },
+        },
+      },
+    };
+
     if (type === 'all' || type === 'tracks') {
-      const tracks = await this.PaginationService.paginate({
+      const tracks = await this.paginationService.paginate({
         page,
         pageSize,
         modelName: 'Track',
         where: {
           OR: [
-            // Search by title
             {
               title: {
                 contains: search,
@@ -52,17 +70,30 @@ export class PaginationController {
           },
         },
         include: {
-          creator: true,
+          creator,
           genre: true,
           albums: true,
         },
       });
+      if (userId) {
+        const likedTracks = await this.prismaService.likedTrack.findMany({
+          where: {
+            userId,
+          },
+        });
+        tracks.items = tracks.items.map((track) => {
+          track['isLiked'] = likedTracks.some(
+            (likedTrack) => likedTrack.id === track.id
+          );
+          return track;
+        });
+      }
       response['tracks'] = tracks;
     }
 
     if (type === 'all' || type === 'playlists') {
       // Most Popular Playlists
-      const playlists = await this.PaginationService.paginate({
+      const playlists = await this.paginationService.paginate({
         page,
         pageSize,
         modelName: 'Playlist',
@@ -83,7 +114,8 @@ export class PaginationController {
           },
         },
         include: {
-          creator: true,
+          creator,
+          _count: true,
         },
       });
       response['playlists'] = playlists;
@@ -91,7 +123,7 @@ export class PaginationController {
 
     if (type === 'all' || type === 'albums') {
       // Most Popular Albums
-      const albums = await this.PaginationService.paginate({
+      const albums = await this.paginationService.paginate({
         page,
         pageSize,
         modelName: 'Album',
@@ -112,8 +144,9 @@ export class PaginationController {
           },
         },
         include: {
-          creator: true,
+          creator,
           tags: true,
+          _count: true,
         },
       });
       response['albums'] = albums;
@@ -121,7 +154,7 @@ export class PaginationController {
 
     if (type === 'all' || type === 'users') {
       // Most Popular Users
-      const users = await this.PaginationService.paginate({
+      const users = await this.paginationService.paginate({
         page,
         pageSize,
         modelName: 'User',
@@ -143,43 +176,44 @@ export class PaginationController {
         },
 
         include: {
-          profile: {
-            select: {
-              avatar: true,
-              cover: true,
-              name: true,
-              id: true,
-            },
-          },
+          profile: creator,
         },
       });
       response['users'] = users;
     }
 
-    if (type === 'all' || type === 'genres') {
-      // Most Popular Genres
-      const genres = await this.PaginationService.paginate({
+    if (type === 'all' || type === 'artists') {
+      const artists = await this.paginationService.paginate({
         page,
         pageSize,
-        modelName: 'Genre',
+        modelName: 'User',
         where: {
           OR: [
-            // Search by name
+            // Search by username
             {
-              name: {
+              username: {
                 contains: search,
                 mode: 'insensitive',
+              },
+              profile: {
+                name: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
               },
             },
           ],
         },
         orderBy: {
-          tracks: {
+          followers: {
             _count: 'desc',
           },
         },
+        include: {
+          profile: creator,
+        },
       });
-      response['genres'] = genres;
+      response['artists'] = artists;
     }
 
     return response;
