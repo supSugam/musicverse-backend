@@ -43,10 +43,10 @@ export class UsersController {
     };
   }
 
-  @Get(':id')
-  @ApiCreatedResponse({ type: UserEntity, description: 'Get a user by Id' })
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOneById(id);
+  @Get(':userIdOrUsername')
+  @ApiCreatedResponse({ description: 'Get a user by Id or Username' })
+  async findOneById(@Param('userIdOrUsername') userIdOrUsername: string) {
+    return this.usersService.findOneByUserIdOrUsername(userIdOrUsername);
   }
 
   @Patch()

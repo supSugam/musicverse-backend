@@ -174,6 +174,9 @@ export class PlaylistsController {
               username: true,
               email: true,
               role: true,
+              createdAt: true,
+              updatedAt: true,
+              artistStatus: true,
               profile: true,
             },
           },
@@ -218,7 +221,14 @@ export class PlaylistsController {
             id: true,
             title: true,
             creator: {
-              include: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+                createdAt: true,
+                updatedAt: true,
+                artistStatus: true,
                 profile: true,
               },
             },

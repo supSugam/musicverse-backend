@@ -4,6 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 import { CredentialsType } from 'src/utils/enums/Auth';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class UsersService {
@@ -39,20 +40,30 @@ export class UsersService {
     });
   }
 
-  async findOneById(id: string) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id },
-        include: {
-          genres: true,
-        },
-      });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-    } catch (err) {
+  async findOneByUserIdOrUsername(idOrUsername: string) {
+    const isId = isUUID(idOrUsername);
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        ...(isId ? { id: idOrUsername } : { username: idOrUsername }),
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        artistStatus: true,
+        profile: true,
+      },
+    });
+
+    if (!user) {
       throw new NotFoundException('User not found');
     }
+
+    return user;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {

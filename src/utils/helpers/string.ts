@@ -11,3 +11,9 @@ export function splitStringFromLastDot(
     return [firstPart, secondPart];
   }
 }
+
+export const isUuid = (uuid: string): boolean => {
+  const uuidRegex =
+    /^[a-z0-9]{4,}-[a-z0-9]{4,}-[a-z0-9]{4,}-[a-z0-9]{4,}-[a-z0-9]{4,}/;
+  return uuidRegex.test(uuid);
+};
