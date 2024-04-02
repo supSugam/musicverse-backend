@@ -56,6 +56,15 @@ export class UsersService {
         updatedAt: true,
         artistStatus: true,
         profile: true,
+        _count: {
+          select: {
+            albums: true,
+            tracks: true,
+            playlists: true,
+            followers: true,
+            following: true,
+          },
+        },
       },
     });
 

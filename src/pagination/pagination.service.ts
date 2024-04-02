@@ -16,8 +16,21 @@ type PaginationOptions<ModelName extends ModelNames> = {
   modelName: ModelName;
   where?: PrismaFindManyArgs<ModelName>['where'];
   orderBy?: PrismaFindManyArgs<ModelName>['orderBy'];
-  include?: PrismaFindManyArgs<ModelName>['include'];
-} & BasePaginationDto;
+} & BasePaginationDto &
+  (
+    | {
+        include: PrismaFindManyArgs<ModelName>['include'];
+        select?: undefined;
+      }
+    | {
+        include?: undefined;
+        select: PrismaFindManyArgs<ModelName>['select'];
+      }
+    | {
+        include?: undefined;
+        select?: undefined;
+      }
+  );
 
 @Injectable()
 export class PaginationService {
@@ -30,6 +43,7 @@ export class PaginationService {
     where,
     orderBy,
     include,
+    select,
   }: PaginationOptions<ModelName>) {
     try {
       const db = this.prismaService[modelName as string];
@@ -41,7 +55,7 @@ export class PaginationService {
           orderBy: orderBy || {
             createdAt: 'asc',
           },
-          include: include || {},
+          ...(include ? { include } : select ? { select } : {}),
         });
         return {
           items,
@@ -60,7 +74,7 @@ export class PaginationService {
         orderBy,
         skip,
         take: Number(pageSize),
-        include: include || {},
+        ...(include ? { include } : select ? { select } : {}),
       });
 
       return {

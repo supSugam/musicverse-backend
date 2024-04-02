@@ -33,22 +33,6 @@ export class PaginationController {
     // Most Popular Tracks
     const response = {};
 
-    const creator = {
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        profile: {
-          select: {
-            avatar: true,
-            cover: true,
-            name: true,
-            id: true,
-          },
-        },
-      },
-    };
-
     if (type === 'all' || type === 'tracks') {
       const tracks = await this.paginationService.paginate({
         page,
@@ -70,7 +54,18 @@ export class PaginationController {
           },
         },
         include: {
-          creator,
+          creator: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              role: true,
+              createdAt: true,
+              updatedAt: true,
+              artistStatus: true,
+              profile: true,
+            },
+          },
           genre: true,
           albums: true,
         },
@@ -114,7 +109,18 @@ export class PaginationController {
           },
         },
         include: {
-          creator,
+          creator: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              role: true,
+              createdAt: true,
+              updatedAt: true,
+              artistStatus: true,
+              profile: true,
+            },
+          },
           _count: true,
         },
       });
@@ -144,7 +150,18 @@ export class PaginationController {
           },
         },
         include: {
-          creator,
+          creator: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              role: true,
+              createdAt: true,
+              updatedAt: true,
+              artistStatus: true,
+              profile: true,
+            },
+          },
           tags: true,
           _count: true,
         },
@@ -174,9 +191,15 @@ export class PaginationController {
             _count: 'desc',
           },
         },
-
-        include: {
-          profile: creator,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+          artistStatus: true,
+          profile: true,
         },
       });
       response['users'] = users;
@@ -209,8 +232,15 @@ export class PaginationController {
             _count: 'desc',
           },
         },
-        include: {
-          profile: creator,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+          artistStatus: true,
+          profile: true,
         },
       });
       response['artists'] = artists;

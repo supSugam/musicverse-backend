@@ -46,4 +46,8 @@ export class TrackPaginationDto extends BasePaginationDto {
   @ApiProperty({ required: false })
   @IsOptional()
   creatorId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  public?: boolean;
 }
