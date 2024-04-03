@@ -200,8 +200,6 @@ export class PlaylistsController {
         return playlist;
       });
     }
-    console.log(res.items.length, 'res.items.length');
-
     return res;
   }
 
@@ -279,7 +277,6 @@ export class PlaylistsController {
     }
   ) {
     const coverFile = files?.cover?.[0];
-    console.log(coverFile, 'coverFile');
     const { deleteCover, ...rest } = cleanObject(updatePlaylistDto);
     const payload: UpdatePlaylistPayload = {
       creatorId: req.user.id as string,
@@ -306,7 +303,6 @@ export class PlaylistsController {
           fileType: 'image',
           originalFilename: coverFile.originalname,
         });
-        console.log(coverUrl, 'coverUrl');
         payload.cover = coverUrl;
       }
     }

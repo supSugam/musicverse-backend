@@ -204,13 +204,6 @@ export class TracksService {
   }
 
   async play(trackId: string, userId: string) {
-    const totalPlays = await this.prisma.play.count({
-      where: {
-        trackId,
-        userId,
-      },
-    });
-    console.log(totalPlays);
     return await this.prisma.play.create({
       data: {
         trackId,

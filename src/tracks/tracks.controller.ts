@@ -102,8 +102,6 @@ export class TracksController {
       });
     }
 
-    console.log('payload', payload);
-
     const { id: trackId } = await this.tracksService.create(payload);
 
     const uploaded = {};
@@ -213,7 +211,6 @@ export class TracksController {
         track['isLiked'] = likedTracks.some(
           (likedTrack) => likedTrack.id === track.id
         );
-        console.log('track', track._count);
         return track;
       });
     }
@@ -337,7 +334,6 @@ export class TracksController {
   @UseGuards(AuthGuard)
   @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
   async play(@Request() req, @Param('id') id: string) {
-    console.log('play trackId', id);
     const userId = req.user.id as string;
     return await this.tracksService.play(id, userId);
   }

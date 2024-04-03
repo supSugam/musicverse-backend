@@ -17,6 +17,7 @@ import { TracksModule } from './tracks/tracks.module';
 import { AlbumsModule } from './albums/albums.module';
 import { TagsModule } from './tags/tags.module';
 import { PlaylistsModule } from './playlists/playlists.module';
+import { SocketModule } from './socket/socket.module';
 @Module({
   imports: [
     PrismaModule,
@@ -56,6 +57,7 @@ import { PlaylistsModule } from './playlists/playlists.module';
     AlbumsModule,
     TagsModule,
     PlaylistsModule,
+    SocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],
