@@ -134,9 +134,16 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync(payload);
 
+    const hasCompletedProfile = await this.prismaService.profile.findFirst({
+      where: {
+        userId: user.id,
+      },
+    });
+
     return {
       access_token: token,
       user: payload,
+      hasCompletedProfile: !!hasCompletedProfile,
     };
   }
 }

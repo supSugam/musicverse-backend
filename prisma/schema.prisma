@@ -21,6 +21,18 @@ enum ReviewStatus {
   NOT_REQUESTED
 }
 
+enum NotificationType {
+  FOLLOW
+  DOWNLOAD_TRACK
+  LIKE_TRACK
+  SAVE_PLAYLIST
+  SAVE_ALBUM
+  COLLABORATE_PLAYLIST
+  NEW_TRACK
+  NEW_ALBUM
+  NEW_PLAYLIST
+}
+
 model User {
   id                    String          @id @default(dbgenerated("gen_random_uuid()"))
   username              String          @unique
@@ -45,8 +57,34 @@ model User {
   savedAlbums           SavedAlbum[]
   downloads             Download[]
   plays                 Play[]
+  devices               UserDevice[]
+  notifications       Notification[] @relation("RecipientNotifications")
+  triggerNotifications Notification[] @relation("TriggerUserNotifications")
+}
+model UserDevice {
+  id          String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  deviceToken String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@unique([userId, deviceToken])
 }
 
+model Notification {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  type         NotificationType
+  title        String
+  body         String
+  imageUrl    String?
+  read         Boolean  @default(false)
+  time    DateTime @default(now())
+  recipient    User     @relation("RecipientNotifications", fields: [recipientId], references: [id])
+  recipientId  String
+  triggerUser  User?     @relation("TriggerUserNotifications", fields: [triggerUserId], references: [id])
+  triggerUserId String?
+  destinationId String? // ID of the track, album, playlist, user etc
+}
 model Track {
   id              String        @id @default(dbgenerated("gen_random_uuid()"))
   title           String

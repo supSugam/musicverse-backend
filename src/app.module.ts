@@ -18,6 +18,10 @@ import { AlbumsModule } from './albums/albums.module';
 import { TagsModule } from './tags/tags.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { SocketModule } from './socket/socket.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificationsModule } from './notifications/notifications.module';
+import { NotificatonsService } from './notifications/notifications.service';
+import { FirebaseModule } from './firebase/firebase.module';
 @Module({
   imports: [
     PrismaModule,
@@ -58,8 +62,11 @@ import { SocketModule } from './socket/socket.module';
     TagsModule,
     PlaylistsModule,
     SocketModule,
+    EventEmitterModule.forRoot(),
+    NotificationsModule,
+    FirebaseModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, NotificatonsService],
 })
 export class AppModule {}

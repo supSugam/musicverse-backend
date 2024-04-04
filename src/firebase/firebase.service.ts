@@ -12,6 +12,10 @@ export class FirebaseService {
     this.FirebaseApp = firebaseApp;
   }
 
+  getMessagingService() {
+    return this.FirebaseApp.messaging();
+  }
+
   private getBucket() {
     return this.FirebaseApp.storage().bucket();
   }

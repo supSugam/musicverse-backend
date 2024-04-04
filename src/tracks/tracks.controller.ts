@@ -35,13 +35,16 @@ import { TracksPaginationQueryParams } from './tracks-pagination.decorator';
 import { cleanObject } from 'src/utils/helpers/Object';
 import { PaginationService } from 'src/pagination/pagination.service';
 import { TrackPaginationDto } from './dto/track-pagination.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationType } from 'src/notifications/notification-type.enum';
 
 @Controller('tracks')
 export class TracksController {
   constructor(
     private readonly tracksService: TracksService,
     private readonly firebaseService: FirebaseService,
-    private readonly paginationService: PaginationService
+    private readonly paginationService: PaginationService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   @Post()
@@ -218,8 +221,9 @@ export class TracksController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   async findOne(@Request() req, @Param('id') trackId: string) {
+    this.eventEmitter.emit(NotificationType.NEW_TRACK, { trackId });
     const userId: string | undefined = req.user.id;
     return await this.tracksService.findOne(trackId, userId);
   }
