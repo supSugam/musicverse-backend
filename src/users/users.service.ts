@@ -2,13 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UserRole } from '@prisma/client';
+import { NotificationType, UserRole } from '@prisma/client';
 import { CredentialsType } from 'src/utils/enums/Auth';
 import { isUUID } from 'class-validator';
+import { FollowPayload } from 'src/notifications/payload.type';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2
+  ) {}
 
   create(createUserDto: CreateUserDto) {
     return this.prisma.user.create({
@@ -162,6 +167,55 @@ export class UsersService {
         isVerified: status,
       },
     });
+  }
+
+  async toggleFollow(userId: string, followUserId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        following: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isFollowing = user.following.some((u) => u.id === followUserId);
+
+    if (isFollowing) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          following: {
+            disconnect: {
+              id: followUserId,
+            },
+          },
+        },
+      });
+    } else {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          following: {
+            connect: {
+              id: followUserId,
+            },
+          },
+        },
+      });
+      this.eventEmitter.emit(NotificationType.FOLLOW, {
+        followerId: userId,
+        followingId: followUserId,
+      } as FollowPayload);
+    }
+
+    return {
+      message: isFollowing
+        ? 'Unfollowed successfully'
+        : 'Followed successfully',
+    };
   }
 
   // TODO: Create Profile, Update Profile, Delete Profile

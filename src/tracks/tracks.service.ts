@@ -4,12 +4,16 @@ import { UpdateTrackDto } from './dto/update-track.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { cleanObject } from 'src/utils/helpers/Object';
+import { NotificationType } from '@prisma/client';
+import { LikeTrackPayload } from 'src/notifications/payload.type';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class TracksService {
   constructor(
-    private prisma: PrismaService,
-    private firebaseService: FirebaseService
+    private readonly prisma: PrismaService,
+    private readonly firebaseService: FirebaseService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   async create(createTrackDto: CreateTrackPayload) {
@@ -134,6 +138,19 @@ export class TracksService {
           },
         }),
       },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -186,6 +203,11 @@ export class TracksService {
           trackId,
         },
       });
+
+      this.eventEmitter.emit(NotificationType.LIKE_TRACK, {
+        trackId,
+        userId,
+      } as LikeTrackPayload);
 
       return { message: 'Track liked.' };
     }

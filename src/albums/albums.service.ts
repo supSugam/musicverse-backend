@@ -8,12 +8,16 @@ import { UpdateAlbumDto } from './dto/update-album.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { cleanObject } from 'src/utils/helpers/Object';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationType } from 'src/notifications/notification-type.enum';
+import { SaveAlbumPayload } from 'src/notifications/payload.type';
 
 @Injectable()
 export class AlbumsService {
   constructor(
-    private prisma: PrismaService,
-    private firebaseService: FirebaseService
+    private readonly prisma: PrismaService,
+    private readonly firebaseService: FirebaseService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   async create(createAlbumDto: CreateAlbumDto) {
@@ -43,6 +47,20 @@ export class AlbumsService {
         creator: {
           connect: {
             id: creatorId,
+          },
+        },
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -92,6 +110,20 @@ export class AlbumsService {
             set: payload.tags.map((tagId) => ({ id: tagId })),
           },
         }),
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -150,6 +182,10 @@ export class AlbumsService {
           },
         },
       });
+      this.eventEmitter.emit(NotificationType.SAVE_ALBUM, {
+        albumId,
+        userId,
+      } as SaveAlbumPayload);
       return { message: 'Album Saved' };
     }
   }

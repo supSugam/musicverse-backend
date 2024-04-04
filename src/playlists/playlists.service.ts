@@ -9,41 +9,37 @@ import {
 } from './dto/update-playlist.dto';
 import { cleanObject } from 'src/utils/helpers/Object';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { FirebaseService } from 'src/firebase/firebase.service';
 import { Prisma } from '@prisma/client';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationType } from 'src/notifications/notification-type.enum';
+import { SavePlaylistPayload } from 'src/notifications/payload.type';
 
 @Injectable()
 export class PlaylistsService {
   constructor(
-    private prisma: PrismaService,
-    private firebaseService: FirebaseService
+    private readonly prismaService: PrismaService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
-  /**
-   *
-   *
-   * @param {CreatePlaylistPayload} createPlaylistPayload
-   * @return {*}
-   * @memberof PlaylistsService
-   */
   async create(createPlaylistPayload: CreatePlaylistPayload) {
     const { creatorId, title, tags, ...rest } = cleanObject(
       createPlaylistPayload
     );
 
-    const playlistWithSameTitleExists = await this.prisma.playlist.findFirst({
-      where: {
-        title: title,
-        creatorId: creatorId,
-      },
-    });
+    const playlistWithSameTitleExists =
+      await this.prismaService.playlist.findFirst({
+        where: {
+          title: title,
+          creatorId: creatorId,
+        },
+      });
     if (playlistWithSameTitleExists) {
       throw new BadRequestException(
         'You already have a playlist with same title'
       );
     }
 
-    return await this.prisma.playlist.create({
+    return await this.prismaService.playlist.create({
       data: {
         title,
         ...rest,
@@ -58,12 +54,26 @@ export class PlaylistsService {
           },
         }),
       },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
   findOne(id: string, include: Prisma.PlaylistInclude) {
     try {
-      return this.prisma.playlist.findUnique({
+      return this.prismaService.playlist.findUnique({
         where: {
           id,
         },
@@ -80,7 +90,7 @@ export class PlaylistsService {
   async update(id: string, updatePlaylistPayload: UpdatePlaylistPayload) {
     const { tags, creatorId, ...rest } = updatePlaylistPayload;
 
-    const playlist = await this.prisma.playlist.findUnique({
+    const playlist = await this.prismaService.playlist.findUnique({
       where: {
         id,
       },
@@ -96,7 +106,7 @@ export class PlaylistsService {
       );
     }
 
-    return await this.prisma.playlist.update({
+    return await this.prismaService.playlist.update({
       where: {
         id,
       },
@@ -108,11 +118,25 @@ export class PlaylistsService {
           },
         }),
       },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
   async getSavedPlaylists(userId: string) {
-    return await this.prisma.playlist.findMany({
+    return await this.prismaService.playlist.findMany({
       where: {
         savedBy: {
           some: {
@@ -132,7 +156,7 @@ export class PlaylistsService {
    * @memberof PlaylistsService
    */
   async remove(playlistId: string, userId: string) {
-    const playlist = await this.prisma.playlist.findUnique({
+    const playlist = await this.prismaService.playlist.findUnique({
       where: {
         id: playlistId,
       },
@@ -149,7 +173,7 @@ export class PlaylistsService {
     }
 
     try {
-      await this.prisma.playlist.delete({
+      await this.prismaService.playlist.delete({
         where: {
           id: playlistId,
         },
@@ -161,7 +185,7 @@ export class PlaylistsService {
   }
 
   async getOwnedPlaylists(userId: string) {
-    return await this.prisma.playlist.findMany({
+    return await this.prismaService.playlist.findMany({
       where: {
         creatorId: userId,
       },
@@ -177,7 +201,7 @@ export class PlaylistsService {
     playlists: string[];
     userId: string;
   }) {
-    const track = await this.prisma.track.findUnique({
+    const track = await this.prismaService.track.findUnique({
       where: {
         id: trackId,
       },
@@ -187,7 +211,7 @@ export class PlaylistsService {
       throw new BadRequestException('Track not found');
     }
 
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: {
         id: userId,
       },
@@ -197,7 +221,7 @@ export class PlaylistsService {
       throw new BadRequestException('User not found');
     }
 
-    const userPlaylists = await this.prisma.playlist.findMany({
+    const userPlaylists = await this.prismaService.playlist.findMany({
       where: {
         id: {
           in: playlists,
@@ -223,7 +247,7 @@ export class PlaylistsService {
       );
     }
 
-    const trackPlaylists = await this.prisma.playlist.findMany({
+    const trackPlaylists = await this.prismaService.playlist.findMany({
       where: {
         id: {
           in: playlists,
@@ -242,7 +266,7 @@ export class PlaylistsService {
 
     try {
       for (const playlist of playlists) {
-        await this.prisma.playlist.update({
+        await this.prismaService.playlist.update({
           where: {
             id: playlist,
           },
@@ -270,7 +294,7 @@ export class PlaylistsService {
     playlists: string[];
     userId: string;
   }) {
-    const track = await this.prisma.track.findUnique({
+    const track = await this.prismaService.track.findUnique({
       where: {
         id: trackId,
       },
@@ -280,7 +304,7 @@ export class PlaylistsService {
       throw new BadRequestException('Track not found');
     }
 
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: {
         id: userId,
       },
@@ -290,7 +314,7 @@ export class PlaylistsService {
       throw new BadRequestException('User not found');
     }
 
-    const userPlaylists = await this.prisma.playlist.findMany({
+    const userPlaylists = await this.prismaService.playlist.findMany({
       where: {
         id: {
           in: playlists,
@@ -316,7 +340,7 @@ export class PlaylistsService {
       );
     }
 
-    const trackPlaylists = await this.prisma.playlist.findMany({
+    const trackPlaylists = await this.prismaService.playlist.findMany({
       where: {
         id: {
           in: playlists,
@@ -335,7 +359,7 @@ export class PlaylistsService {
 
     try {
       for (const playlist of playlists) {
-        await this.prisma.playlist.update({
+        await this.prismaService.playlist.update({
           where: {
             id: playlist,
           },
@@ -363,7 +387,7 @@ export class PlaylistsService {
     playlistId: string;
     userId: string;
   }) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: {
         id: userId,
       },
@@ -373,7 +397,7 @@ export class PlaylistsService {
       throw new BadRequestException('User not found');
     }
 
-    const playlist = await this.prisma.playlist.findUnique({
+    const playlist = await this.prismaService.playlist.findUnique({
       where: {
         id: playlistId,
       },
@@ -383,7 +407,7 @@ export class PlaylistsService {
       throw new BadRequestException('Playlist not found');
     }
 
-    const userPlaylists = await this.prisma.playlist.findMany({
+    const userPlaylists = await this.prismaService.playlist.findMany({
       where: {
         id: playlistId,
         OR: [
@@ -407,7 +431,7 @@ export class PlaylistsService {
       );
     }
 
-    const trackPlaylists = await this.prisma.playlist.findMany({
+    const trackPlaylists = await this.prismaService.playlist.findMany({
       where: {
         id: playlistId,
         tracks: {
@@ -426,7 +450,7 @@ export class PlaylistsService {
 
     try {
       for (const track of tracks) {
-        await this.prisma.playlist.update({
+        await this.prismaService.playlist.update({
           where: {
             id: playlistId,
           },
@@ -452,7 +476,7 @@ export class PlaylistsService {
     playlistId: string;
     userId: string;
   }) {
-    const playlist = await this.prisma.playlist.findUnique({
+    const playlist = await this.prismaService.playlist.findUnique({
       where: {
         id: playlistId,
       },
@@ -462,7 +486,7 @@ export class PlaylistsService {
       throw new BadRequestException('Playlist Not Found');
     }
 
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: {
         id: userId,
       },
@@ -472,7 +496,7 @@ export class PlaylistsService {
       throw new BadRequestException('User Not Found');
     }
 
-    const savedPlaylist = await this.prisma.playlist.findFirst({
+    const savedPlaylist = await this.prismaService.playlist.findFirst({
       where: {
         id: playlistId,
         savedBy: {
@@ -484,7 +508,7 @@ export class PlaylistsService {
     });
 
     if (savedPlaylist) {
-      await this.prisma.playlist.update({
+      await this.prismaService.playlist.update({
         where: {
           id: playlistId,
         },
@@ -498,7 +522,7 @@ export class PlaylistsService {
       });
       return { message: 'Playlist Unsaved' };
     } else {
-      await this.prisma.playlist.update({
+      await this.prismaService.playlist.update({
         where: {
           id: playlistId,
         },
@@ -510,6 +534,10 @@ export class PlaylistsService {
           },
         },
       });
+      this.eventEmitter.emit(NotificationType.SAVE_PLAYLIST, {
+        playlistId,
+        userId,
+      } as SavePlaylistPayload);
       return { message: 'Playlist Saved' };
     }
   }

@@ -17,7 +17,7 @@ import {
   Response,
 } from '@nestjs/common';
 import { TracksService } from './tracks.service';
-import { CreateTrackDto, CreateTrackPayload } from './dto/create-track.dto';
+import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
 import { ApiConsumes } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
@@ -37,6 +37,10 @@ import { PaginationService } from 'src/pagination/pagination.service';
 import { TrackPaginationDto } from './dto/track-pagination.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotificationType } from 'src/notifications/notification-type.enum';
+import {
+  DownloadTrackPayload,
+  NewTrackPayload,
+} from 'src/notifications/payload.type';
 
 @Controller('tracks')
 export class TracksController {
@@ -144,7 +148,18 @@ export class TracksController {
       throw error;
     }
 
-    return await this.tracksService.update(trackId, uploaded);
+    const track = await this.tracksService.update(trackId, uploaded);
+
+    // Emit new track event
+    if (!createTrackDto.albumIds || createTrackDto.albumIds.length === 0) {
+      this.eventEmitter.emit(NotificationType.NEW_TRACK, {
+        artistId: track.creatorId,
+        artistName: track.creator.profile.name || track.creator.username,
+        title: track.title,
+        imageUrl: track.cover,
+      } as NewTrackPayload);
+    }
+    return track;
   }
 
   @Get()
@@ -221,9 +236,8 @@ export class TracksController {
   }
 
   @Get(':id')
-  // @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   async findOne(@Request() req, @Param('id') trackId: string) {
-    this.eventEmitter.emit(NotificationType.NEW_TRACK, { trackId });
     const userId: string | undefined = req.user.id;
     return await this.tracksService.findOne(trackId, userId);
   }
@@ -348,6 +362,13 @@ export class TracksController {
   @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
   async download(@Request() req, @Param('id') trackId: string) {
     const userId = req.user.id as string;
+
+    // Emit download track event
+    this.eventEmitter.emit(NotificationType.DOWNLOAD_TRACK, {
+      trackId,
+      userId,
+    } as DownloadTrackPayload);
+
     return await this.tracksService.download(trackId, userId);
   }
 }

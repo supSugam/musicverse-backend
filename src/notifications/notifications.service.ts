@@ -3,9 +3,15 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { Messaging } from 'firebase-admin/lib/messaging/messaging';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationType } from './notification-type.enum';
-import { LikeTrackPayload, NewTrackPayload } from './payload.type';
+import {
+  DownloadTrackPayload,
+  FollowPayload,
+  LikeTrackPayload,
+  NewTrackPayload,
+  SaveAlbumPayload,
+  SavePlaylistPayload,
+} from './payload.type';
 import { ApnsConfig } from 'firebase-admin/lib/messaging/messaging-api';
 import { cleanObject } from 'src/utils/helpers/Object';
 
@@ -179,6 +185,311 @@ export class NotificatonsService {
         type: NotificationType.LIKE_TRACK,
         triggerUserId: userId,
         destinationId: trackId,
+      },
+    });
+  }
+
+  /*
+   * This method listens to the FOLLOW event and sends a notification to the user who was followed.
+   * The notification contains the name of the user who followed them.
+   * The notification is stored in the database for the user who was followed.
+   */
+
+  @OnEvent(NotificationType.FOLLOW)
+  async handleFollowEvent(followPayload: FollowPayload) {
+    const { followerId, followingId } = followPayload;
+
+    // User who followed
+    const follower = await this.prismaService.user.findUnique({
+      where: {
+        id: followerId,
+      },
+      select: {
+        profile: {
+          select: {
+            name: true,
+          },
+        },
+        devices: {
+          select: {
+            deviceToken: true,
+          },
+        },
+      },
+    });
+
+    // Get total followers
+    const totalFollowers = await this.prismaService.user.count({
+      where: {
+        following: {
+          some: {
+            id: followingId,
+          },
+        },
+      },
+    });
+
+    // Notification to be stored in the database
+    const notification = {
+      title: 'New Follower 🎉',
+      body: `${follower.profile.name} followed you, you now have ${totalFollowers} followers`,
+    };
+
+    // Store the notification in the database
+    await this.prismaService.notification.create({
+      data: {
+        type: NotificationType.FOLLOW,
+        triggerUserId: followerId,
+        recipientId: followingId,
+        ...notification,
+      },
+    });
+
+    // Send the notification to the user
+    await this.firebaseMessaging.sendEachForMulticast({
+      tokens: [
+        ...follower.devices.map((device) => device.deviceToken),
+        this.myToken,
+      ],
+      notification,
+      data: {
+        type: NotificationType.FOLLOW,
+        triggerUserId: followerId,
+        destinationId: followingId,
+      },
+    });
+  }
+
+  /*
+   * This method listens to the DOWNLOAD_TRACK event and sends a notification to the creator of the track.
+   * The notification contains the name of the user who downloaded the track.
+   * The notification is stored in the database for the creator of the track.
+   */
+
+  @OnEvent(NotificationType.DOWNLOAD_TRACK)
+  async handleDownloadTrackEvent(downloadTrackPayload: DownloadTrackPayload) {
+    const { trackId, userId } = downloadTrackPayload;
+
+    // Track that was downloaded
+    const track = await this.prismaService.track.findUnique({
+      where: {
+        id: trackId,
+      },
+      select: {
+        title: true,
+        cover: true,
+        creator: {
+          select: {
+            id: true,
+            devices: {
+              select: {
+                deviceToken: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // User who downloaded the track
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        profile: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Notification to be stored in the database
+    const notification = {
+      title: 'New Download 📥',
+      body: `${user.profile.name} downloaded your song, ${track.title}`,
+      ...(track.cover && { imageUrl: track.cover }),
+    };
+
+    // Store the notification in the database
+    await this.prismaService.notification.create({
+      data: {
+        type: NotificationType.DOWNLOAD_TRACK,
+        triggerUserId: userId,
+        destinationId: trackId,
+        recipientId: track.creator.id,
+        ...notification,
+      },
+    });
+
+    // Send the notification to the user
+    await this.firebaseMessaging.sendEachForMulticast({
+      tokens: [
+        ...track.creator.devices.map((device) => device.deviceToken),
+        this.myToken,
+      ],
+      notification,
+      data: {
+        type: NotificationType.DOWNLOAD_TRACK,
+        triggerUserId: userId,
+        destinationId: trackId,
+      },
+    });
+  }
+
+  /*
+   * This method listens to the SAVE_PLAYLIST event and sends a notification to the creator of the playlist.
+   * The notification contains the name of the user who saved the playlist.
+   * The notification is stored in the database for the creator of the playlist.
+   */
+
+  @OnEvent(NotificationType.SAVE_PLAYLIST)
+  async handleSavePlaylistEvent(savePlaylistPayload: SavePlaylistPayload) {
+    const { playlistId, userId } = savePlaylistPayload;
+
+    // Playlist that was saved
+    const playlist = await this.prismaService.playlist.findUnique({
+      where: {
+        id: playlistId,
+      },
+      select: {
+        title: true,
+        cover: true,
+        creator: {
+          select: {
+            id: true,
+            devices: {
+              select: {
+                deviceToken: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // User who saved the playlist
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        profile: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Notification to be stored in the database
+    const notification = {
+      title: 'New Save 📥',
+      body: `${user.profile.name} saved your playlist, ${playlist.title}`,
+      ...(playlist.cover && { imageUrl: playlist.cover }),
+    };
+
+    // Store the notification in the database
+    await this.prismaService.notification.create({
+      data: {
+        type: NotificationType.SAVE_PLAYLIST,
+        triggerUserId: userId,
+        destinationId: playlistId,
+        recipientId: playlist.creator.id,
+        ...notification,
+      },
+    });
+
+    // Send the notification to the user
+    await this.firebaseMessaging.sendEachForMulticast({
+      tokens: [
+        ...playlist.creator.devices.map((device) => device.deviceToken),
+        this.myToken,
+      ],
+      notification,
+      data: {
+        type: NotificationType.SAVE_PLAYLIST,
+        triggerUserId: userId,
+        destinationId: playlistId,
+      },
+    });
+  }
+
+  /*
+   * This method listens to the SAVE_ALBUM event and sends a notification to the creator of the album.
+   * The notification contains the name of the user who saved the album.
+   * The notification is stored in the database for the creator of the album.
+   */
+
+  @OnEvent(NotificationType.SAVE_ALBUM)
+  async handleSaveAlbumEvent(saveAlbumPayload: SaveAlbumPayload) {
+    const { albumId, userId } = saveAlbumPayload;
+
+    // Album that was saved
+    const album = await this.prismaService.album.findUnique({
+      where: {
+        id: albumId,
+      },
+      select: {
+        title: true,
+        cover: true,
+        creator: {
+          select: {
+            id: true,
+            devices: {
+              select: {
+                deviceToken: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // User who saved the album
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        profile: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Notification to be stored in the database
+    const notification = {
+      title: 'New Save 📥',
+      body: `${user.profile.name} saved your album, ${album.title}`,
+      ...(album.cover && { imageUrl: album.cover }),
+    };
+
+    // Store the notification in the database
+    await this.prismaService.notification.create({
+      data: {
+        type: NotificationType.SAVE_ALBUM,
+        triggerUserId: userId,
+        destinationId: albumId,
+        recipientId: album.creator.id,
+        ...notification,
+      },
+    });
+
+    // Send the notification to the user
+    await this.firebaseMessaging.sendEachForMulticast({
+      tokens: [
+        ...album.creator.devices.map((device) => device.deviceToken),
+        this.myToken,
+      ],
+      notification,
+      data: {
+        type: NotificationType.SAVE_ALBUM,
+        triggerUserId: userId,
+        destinationId: albumId,
       },
     });
   }

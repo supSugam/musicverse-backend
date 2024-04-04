@@ -32,13 +32,17 @@ import { cleanObject } from 'src/utils/helpers/Object';
 import { PaginationService } from 'src/pagination/pagination.service';
 import { AlbumsPaginationQueryParams } from './album-pagination.decorator';
 import { AlbumPaginationDto } from './dto/album-pagination.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationType } from '@prisma/client';
+import { NewAlbumPayload } from 'src/notifications/payload.type';
 
 @Controller('albums')
 export class AlbumsController {
   constructor(
     private readonly albumsService: AlbumsService,
     private readonly firebaseService: FirebaseService,
-    private readonly paginationService: PaginationService
+    private readonly paginationService: PaginationService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   @Post()
@@ -75,7 +79,7 @@ export class AlbumsController {
       creatorId: req.user.id as string,
     };
 
-    const album = await this.albumsService.create(payload);
+    let album = await this.albumsService.create(payload);
 
     if (coverFile) {
       const coverUrl = await this.firebaseService.uploadFile({
@@ -86,8 +90,16 @@ export class AlbumsController {
         fileType: 'image',
       });
 
-      return await this.albumsService.update(album.id, { cover: coverUrl });
+      album = await this.albumsService.update(album.id, { cover: coverUrl });
     }
+
+    this.eventEmitter.emit(NotificationType.NEW_ALBUM, {
+      albumId: album.id,
+      artistId: album.creatorId,
+      artistName: album.creator.profile?.name || album.creator.username,
+      title: album.title,
+      imageUrl: album.cover,
+    } as NewAlbumPayload);
     //TODO: use createMany to create multiple tracks for this album
 
     return album;

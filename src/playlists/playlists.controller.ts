@@ -36,14 +36,17 @@ import { cleanObject } from 'src/utils/helpers/Object';
 import { PaginationService } from 'src/pagination/pagination.service';
 import { PlaylistPaginationDto } from './dto/playlist-pagination.dto';
 import { PlaylistsPaginationQueryParams } from './playlist-pagination.decorator';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NewPlaylistPayload } from 'src/notifications/payload.type';
+import { NotificationType } from 'src/notifications/notification-type.enum';
 
 @Controller('playlists')
 export class PlaylistsController {
   constructor(
     private readonly playlistsService: PlaylistsService,
-
     private readonly firebaseService: FirebaseService,
-    private readonly paginationService: PaginationService
+    private readonly paginationService: PaginationService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   // @Post()
@@ -85,7 +88,7 @@ export class PlaylistsController {
       creatorId: req.user.id as string,
     };
 
-    const playlist = await this.playlistsService.create(payload);
+    let playlist = await this.playlistsService.create(payload);
 
     if (coverFile) {
       const coverUrl = await this.firebaseService.uploadFile({
@@ -95,11 +98,17 @@ export class PlaylistsController {
         fileType: 'image',
         originalFilename: coverFile.originalname,
       });
-      const updatedPlaylist = await this.playlistsService.update(playlist.id, {
+      playlist = await this.playlistsService.update(playlist.id, {
         cover: coverUrl,
       });
-      return updatedPlaylist;
     }
+
+    this.eventEmitter.emit(NotificationType.NEW_PLAYLIST, {
+      playlistId: playlist.id,
+      userId: req.user.id,
+      title: playlist.title,
+      imageUrl: playlist.cover,
+    } as NewPlaylistPayload);
 
     return playlist;
   }

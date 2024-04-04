@@ -7,8 +7,6 @@ import {
   Delete,
   UseGuards,
   Request,
-  Logger,
-  Response,
   Post,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -16,17 +14,13 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { UserEntity } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { AuthService } from 'src/auth/auth.service';
 import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
 
 @Controller('users')
 @ApiTags('users')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly authService: AuthService
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @UserRoles(Role.ADMIN)
@@ -61,6 +55,13 @@ export class UsersController {
   @ApiCreatedResponse({ description: 'Delete a user by Id' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/toggle-follow/:userId')
+  @ApiCreatedResponse({ description: 'Toggle follow user by Id' })
+  async toggleFollow(@Request() req, @Param('userId') userId: string) {
+    return this.usersService.toggleFollow(req['user'].id, userId);
   }
 
   // TODO: Profile Routes
