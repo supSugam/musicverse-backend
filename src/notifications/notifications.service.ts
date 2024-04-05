@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Messaging } from 'firebase-admin/lib/messaging/messaging';
 import { FirebaseService } from 'src/firebase/firebase.service';
@@ -16,7 +16,7 @@ import { ApnsConfig } from 'firebase-admin/lib/messaging/messaging-api';
 import { cleanObject } from 'src/utils/helpers/Object';
 
 @Injectable()
-export class NotificatonsService {
+export class NotificationsService {
   private readonly firebaseMessaging: Messaging;
   private readonly apnConfig: ApnsConfig;
   private readonly myToken =
@@ -131,15 +131,12 @@ export class NotificatonsService {
         creator: {
           select: {
             id: true,
-            devices: {
-              select: {
-                deviceToken: true,
-              },
-            },
+            devices: true,
           },
         },
       },
     });
+    console.log(track);
 
     // User who liked the track
     const user = await this.prismaService.user.findUnique({
@@ -492,5 +489,35 @@ export class NotificatonsService {
         destinationId: albumId,
       },
     });
+  }
+
+  async updateReadStatus(
+    notificationId: string,
+    userId: string,
+    status: boolean
+  ) {
+    const notification = await this.prismaService.notification.findUnique({
+      where: {
+        id: notificationId,
+        recipientId: userId,
+      },
+    });
+
+    if (!notification) {
+      throw new NotFoundException(
+        'No Notification found for this Id and User.'
+      );
+    }
+
+    await this.prismaService.notification.update({
+      where: {
+        id: notificationId,
+      },
+      data: {
+        read: status,
+      },
+    });
+
+    return { message: `Marked as ${status ? 'read' : 'unread'}` };
   }
 }

@@ -20,7 +20,7 @@ import { PlaylistsModule } from './playlists/playlists.module';
 import { SocketModule } from './socket/socket.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationsModule } from './notifications/notifications.module';
-import { NotificatonsService } from './notifications/notifications.service';
+import { NotificationsService } from './notifications/notifications.service';
 import { FirebaseModule } from './firebase/firebase.module';
 @Module({
   imports: [
@@ -67,6 +67,6 @@ import { FirebaseModule } from './firebase/firebase.module';
     FirebaseModule,
   ],
   controllers: [AppController],
-  providers: [AppService, NotificatonsService],
+  providers: [AppService, NotificationsService],
 })
 export class AppModule {}

@@ -194,8 +194,12 @@ export class TracksService {
       await this.prisma.likedTrack.delete({
         where: { id: likedTrack.id },
       });
-      return { message: 'Track unliked.' };
+      return { message: 'Track Unliked.' };
     } else {
+      this.eventEmitter.emit(NotificationType.LIKE_TRACK, {
+        trackId,
+        userId,
+      } as LikeTrackPayload);
       // User hasn't liked the track, so like it
       await this.prisma.likedTrack.create({
         data: {
@@ -203,11 +207,6 @@ export class TracksService {
           trackId,
         },
       });
-
-      this.eventEmitter.emit(NotificationType.LIKE_TRACK, {
-        trackId,
-        userId,
-      } as LikeTrackPayload);
 
       return { message: 'Track liked.' };
     }

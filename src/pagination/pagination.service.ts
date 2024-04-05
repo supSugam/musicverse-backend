@@ -52,9 +52,7 @@ export class PaginationService {
       if (!pageSize) {
         const items = await db.findMany({
           where: where || {},
-          orderBy: orderBy || {
-            createdAt: 'asc',
-          },
+          ...(orderBy && { orderBy }),
           ...(include ? { include } : select ? { select } : {}),
         });
         return {
