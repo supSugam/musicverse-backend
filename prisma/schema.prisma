@@ -21,6 +21,13 @@ enum ReviewStatus {
   NOT_REQUESTED
 }
 
+enum InvitationStatus {
+  ACCEPTED
+  PENDING
+  REJECTED
+}
+
+
 enum NotificationType {
   FOLLOW
   DOWNLOAD_TRACK
@@ -60,7 +67,26 @@ model User {
   devices               UserDevice[]
   notifications       Notification[] @relation("RecipientNotifications")
   triggerNotifications Notification[] @relation("TriggerUserNotifications")
+playlistInvitationsSent PlaylistInvitation[] @relation("InvitedBy")
+  playlistInvitationsReceived PlaylistInvitation[] @relation("InvitedUser")
 }
+
+model PlaylistInvitation {
+  id String @id @default(uuid())
+  playlist Playlist @relation(fields: [playlistId], references: [id])
+  playlistId String
+  invitedUser User @relation(name: "InvitedUser", fields: [invitedUserId], references: [id])
+  invitedUserId String
+  invitedBy User @relation(name: "InvitedBy", fields: [invitedById], references: [id])
+  invitedById String
+  status InvitationStatus? @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([playlistId, invitedUserId])
+}
+
+
 model UserDevice {
   id          String    @id @default(dbgenerated("gen_random_uuid()"))
   userId      String
@@ -212,6 +238,7 @@ model Playlist {
   tags          Tag[]
   collaborators User[]          @relation("Collaborators")
   savedBy       SavedPlaylist[]
+  invitations PlaylistInvitation[]
 }
 
 model Album {
