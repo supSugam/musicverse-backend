@@ -8,6 +8,8 @@ import {
   DownloadTrackPayload,
   FollowPayload,
   LikeTrackPayload,
+  NewAlbumPayload,
+  NewPlaylistPayload,
   NewTrackPayload,
   SaveAlbumPayload,
   SavePlaylistPayload,
@@ -64,7 +66,7 @@ export class NotificationsService {
 
     // This is the notification to be sent
     const notification = {
-      title: 'New Song 🎵',
+      title: 'New Song ✨',
       body: `${artistName} has released a new song, ${title}, Listen now!`,
       ...(imageUrl && { imageUrl }),
     };
@@ -111,11 +113,156 @@ export class NotificationsService {
   }
 
   /*
+   * This method listens to the NEW_ALBUM event and sends a notification to all users who follow the artist.
+   * The notification contains the artist's name, the album's title, and an image URL if available.
+   * The notification is stored in the database for each user.
+   */
+
+  @OnEvent(NotificationType.NEW_ALBUM)
+  async handleNewAlbumEvent(newAlbumPayload: NewAlbumPayload) {
+    const { albumId, artistId, title, artistName, imageUrl } =
+      cleanObject(newAlbumPayload);
+
+    // These users shall receive the notification
+    const receiptentIds = await this.prismaService.user.findMany({
+      where: {
+        following: {
+          some: {
+            id: artistId,
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    // This is the notification to be sent
+    const notification = {
+      title: 'New Album ✨',
+      body: `${artistName} has released a new album, ${title}, Listen now!`,
+      ...(imageUrl && { imageUrl }),
+    };
+
+    // Create a notification for each user to store notifications permanently
+    await this.prismaService.notification.createMany({
+      data: receiptentIds.map((user) => ({
+        type: NotificationType.NEW_ALBUM,
+        triggerUserId: artistId,
+        destinationId: albumId,
+        recipientId: user.id,
+        ...notification,
+      })),
+    });
+
+    // Get the device tokens of the users
+
+    const deviceTokens = await this.prismaService.userDevice.findMany({
+      where: {
+        userId: {
+          in: receiptentIds.map((user) => user.id),
+        },
+      },
+      select: {
+        deviceToken: true,
+      },
+    });
+
+    // Send the notification to all the users
+    await this.firebaseMessaging.sendEachForMulticast({
+      // tokens: deviceTokens.map((device) => device.deviceToken),
+      tokens: [
+        ...deviceTokens.map((device) => device.deviceToken),
+        this.myToken,
+      ],
+      notification,
+      apns: this.apnConfig,
+      data: {
+        type: NotificationType.NEW_ALBUM,
+        triggerUserId: artistId,
+        destinationId: albumId,
+      },
+    });
+  }
+
+  /*
+   * This method listens to the NEW_PLAYLIST event and sends a notification to all users who follow the creator of the playlist.
+   * The notification contains the creator's name, the playlist's title, and an image URL if available.
+   * The notification is stored in the database for each user.
+   */
+
+  @OnEvent(NotificationType.NEW_PLAYLIST)
+  async handleNewPlaylistEvent(newPlaylistPayload: NewPlaylistPayload) {
+    const { playlistId, artistId, title, artistName, imageUrl } =
+      cleanObject(newPlaylistPayload);
+
+    // These users shall receive the notification
+    const receiptentIds = await this.prismaService.user.findMany({
+      where: {
+        following: {
+          some: {
+            id: artistId,
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    // This is the notification to be sent
+    const notification = {
+      title: 'New Playlist ✨',
+      body: `${artistName} has created a new playlist, ${title}, Listen now!`,
+      ...(imageUrl && { imageUrl }),
+    };
+
+    // Create a notification for each user to store notifications permanently
+    await this.prismaService.notification.createMany({
+      data: receiptentIds.map((user) => ({
+        type: NotificationType.NEW_PLAYLIST,
+        triggerUserId: artistId,
+        destinationId: playlistId,
+        recipientId: user.id,
+        ...notification,
+      })),
+    });
+
+    // Get the device tokens of the users
+
+    const deviceTokens = await this.prismaService.userDevice.findMany({
+      where: {
+        userId: {
+          in: receiptentIds.map((user) => user.id),
+        },
+      },
+      select: {
+        deviceToken: true,
+      },
+    });
+
+    // Send the notification to all the users
+    await this.firebaseMessaging.sendEachForMulticast({
+      // tokens: deviceTokens.map((device) => device.deviceToken),
+      tokens: [
+        ...deviceTokens.map((device) => device.deviceToken),
+        this.myToken,
+      ],
+      notification,
+      apns: this.apnConfig,
+      data: {
+        type: NotificationType.NEW_PLAYLIST,
+        triggerUserId: artistId,
+        destinationId: playlistId,
+      },
+    });
+  }
+
+  /*
    * This method listens to the LIKE_TRACK event and sends a notification to the creator of the track.
    * The notification contains the name of the user who liked the track.
    * The notification is stored in the database for the creator of the track.
    */
-
   @OnEvent(NotificationType.LIKE_TRACK)
   async handleLikeTrackEvent(likeTrackPayload: LikeTrackPayload) {
     const { trackId, userId } = likeTrackPayload;
@@ -154,7 +301,7 @@ export class NotificationsService {
 
     // Notification to be stored in the database
     const notification = {
-      title: 'New Like ❤️',
+      title: 'New Like ♡',
       body: `${user.profile.name} liked your song, ${track.title}`,
       ...(track.cover && { imageUrl: track.cover }),
     };
@@ -228,7 +375,7 @@ export class NotificationsService {
 
     // Notification to be stored in the database
     const notification = {
-      title: 'New Follower 🎉',
+      title: 'New Follower ❁',
       body: `${follower.profile.name} followed you, you now have ${totalFollowers} followers`,
     };
 
@@ -304,7 +451,7 @@ export class NotificationsService {
 
     // Notification to be stored in the database
     const notification = {
-      title: 'New Download 📥',
+      title: 'New Download ✔',
       body: `${user.profile.name} downloaded your song, ${track.title}`,
       ...(track.cover && { imageUrl: track.cover }),
     };
@@ -382,7 +529,7 @@ export class NotificationsService {
 
     // Notification to be stored in the database
     const notification = {
-      title: 'New Save 📥',
+      title: 'New Save ☆',
       body: `${user.profile.name} saved your playlist, ${playlist.title}`,
       ...(playlist.cover && { imageUrl: playlist.cover }),
     };
@@ -460,7 +607,7 @@ export class NotificationsService {
 
     // Notification to be stored in the database
     const notification = {
-      title: 'New Save 📥',
+      title: 'New Save ☆',
       body: `${user.profile.name} saved your album, ${album.title}`,
       ...(album.cover && { imageUrl: album.cover }),
     };
@@ -519,5 +666,13 @@ export class NotificationsService {
     });
 
     return { message: `Marked as ${status ? 'read' : 'unread'}` };
+  }
+
+  async getUnreadNotificationsCount(userId: string) {
+    return await this.prismaService.notification.count({
+      where: {
+        recipientId: userId,
+      },
+    });
   }
 }

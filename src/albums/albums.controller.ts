@@ -93,6 +93,7 @@ export class AlbumsController {
       album = await this.albumsService.update(album.id, { cover: coverUrl });
     }
 
+    // Only If album is public
     this.eventEmitter.emit(NotificationType.NEW_ALBUM, {
       albumId: album.id,
       artistId: album.creatorId,

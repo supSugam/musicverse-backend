@@ -64,5 +64,25 @@ export class UsersController {
     return this.usersService.toggleFollow(req['user'].id, userId);
   }
 
+  @UseGuards(AuthGuard)
+  @Post('/register-device/:deviceToken')
+  @ApiCreatedResponse({ description: 'Register device token' })
+  async registerDeviceToken(
+    @Request() req,
+    @Param('deviceToken') deviceToken: string
+  ) {
+    return this.usersService.registerDeviceToken(req['user'].id, deviceToken);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/derigister-device/:deviceToken')
+  @ApiCreatedResponse({ description: 'Deregister device token' })
+  async deregisterDeviceToken(
+    @Request() req,
+    @Param('deviceToken') deviceToken: string
+  ) {
+    return this.usersService.deregisterDeviceToken(req['user'].id, deviceToken);
+  }
+
   // TODO: Profile Routes
 }

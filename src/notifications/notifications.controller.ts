@@ -73,4 +73,11 @@ export class NotificationsController {
     const userId = req.user.id;
     return await this.notificationsService.updateReadStatus(id, userId, false);
   }
+
+  @Get('unread-count')
+  @UseGuards(AuthGuard)
+  async getUnreadNotificationsCount(@Request() req, @Param('id') id: string) {
+    const userId = req.user.id;
+    return await this.notificationsService.getUnreadNotificationsCount(userId);
+  }
 }

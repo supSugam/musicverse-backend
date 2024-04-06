@@ -51,7 +51,8 @@ export interface NewAlbumPayload {
 
 export interface NewPlaylistPayload {
   playlistId: string;
-  userId: string;
+  artistId: string;
   title: string;
+  artistName: string;
   imageUrl?: string;
 }

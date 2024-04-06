@@ -103,10 +103,12 @@ export class PlaylistsController {
       });
     }
 
+    // TODO: Only if playlist is public
     this.eventEmitter.emit(NotificationType.NEW_PLAYLIST, {
       playlistId: playlist.id,
-      userId: req.user.id,
+      artistId: playlist.creatorId,
       title: playlist.title,
+      artistName: playlist.creator.username,
       imageUrl: playlist.cover,
     } as NewPlaylistPayload);
 

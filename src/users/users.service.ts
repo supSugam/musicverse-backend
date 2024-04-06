@@ -218,5 +218,74 @@ export class UsersService {
     };
   }
 
+  async registerDeviceToken(userId: string, deviceToken: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // check if device token already exists
+    const existingDevice = await this.prisma.userDevice.findFirst({
+      where: {
+        deviceToken,
+      },
+    });
+
+    if (existingDevice.userId === userId) {
+      return {
+        message: 'Device token already registered',
+      };
+    } else {
+      await this.prisma.userDevice.delete({
+        where: {
+          deviceToken,
+        },
+      });
+
+      await this.prisma.userDevice.create({
+        data: {
+          deviceToken,
+          userId,
+        },
+      });
+      return {
+        message: 'Device token registered successfully',
+      };
+    }
+  }
+
+  async deregisterDeviceToken(userId: string, deviceToken: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const existingDevice = await this.prisma.userDevice.findFirst({
+      where: {
+        deviceToken,
+      },
+    });
+
+    if (!existingDevice) {
+      throw new NotFoundException('Device token not found');
+    }
+
+    await this.prisma.userDevice.delete({
+      where: {
+        deviceToken,
+      },
+    });
+
+    return {
+      message: 'Device token deregistered successfully',
+    };
+  }
+
   // TODO: Create Profile, Update Profile, Delete Profile
 }
