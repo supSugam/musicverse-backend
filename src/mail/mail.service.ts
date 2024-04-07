@@ -61,7 +61,7 @@ export class MailService {
   //   });
   // }
 
-  // delete user if user is not verified within 24 hours
+  //TODO: delete user if user is not verified within 24 hours
   @Cron(CronExpression.EVERY_10_SECONDS)
   removeUnverifiedUsers(): void {}
 

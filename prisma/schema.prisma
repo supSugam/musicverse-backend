@@ -69,6 +69,16 @@ model User {
   triggerNotifications Notification[] @relation("TriggerUserNotifications")
 playlistInvitationsSent PlaylistInvitation[] @relation("InvitedBy")
   playlistInvitationsReceived PlaylistInvitation[] @relation("InvitedUser")
+  bannedUsers           BannedUser[]
+}
+
+model BannedUser {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  reason    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PlaylistInvitation {
@@ -250,7 +260,7 @@ model Album {
   updatedAt    DateTime      @updatedAt
   genreId      String
   genre        Genre         @relation(fields: [genreId], references: [id])
-  publicStatus ReviewStatus? @default(NOT_REQUESTED)
+  publicStatus ReviewStatus? @default(APPROVED)
   creator      User          @relation(fields: [creatorId], references: [id])
   creatorId    String
   tracks       Track[] // Tracks in this album

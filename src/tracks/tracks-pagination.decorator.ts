@@ -18,7 +18,7 @@ export const TracksPaginationQueryParams = createParamDecorator(
       liked: Boolean(request.query.liked),
       owned: Boolean(request.query.owned),
       creatorId: request.query.creatorId,
-      public: Boolean(request.query.public),
+      publicStatus: request.query.publicStatus,
     };
   }
 );

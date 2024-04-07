@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional } from 'class-validator';
 import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
+import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
 export class TrackPaginationDto extends BasePaginationDto {
   @ApiProperty({ required: false })
@@ -49,5 +50,5 @@ export class TrackPaginationDto extends BasePaginationDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  public?: boolean;
+  publicStatus?: ReviewStatus;
 }

@@ -30,7 +30,6 @@ export class AuthController {
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     credentials: LoginUserDto
   ) {
-    console.log('credentials', credentials);
     return this.authService.signIn(credentials);
   }
 }

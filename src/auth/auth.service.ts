@@ -121,7 +121,19 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Incorrect Password');
+      throw new UnauthorizedException('Invalid Credentials, Please try again.');
+    }
+
+    const isUserBanned = await this.prismaService.bannedUser.findFirst({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (isUserBanned) {
+      throw new UnauthorizedException(
+        `You're Banned. ${isUserBanned.reason ? `Reason: ${isUserBanned.reason}` : ''}`
+      );
     }
 
     const payload = {

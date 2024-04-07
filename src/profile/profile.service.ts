@@ -27,6 +27,17 @@ export class ProfileService {
   }
 
   async findOne(userId: string) {
+    const isUserBanned = await this.prisma.bannedUser.findUnique({
+      where: { id: userId },
+    });
+
+    if (isUserBanned) {
+      throw new HttpException(
+        'You have been banned, please contact support for more information',
+        HttpStatus.FORBIDDEN
+      );
+    }
+
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
 
     if (!profile) {

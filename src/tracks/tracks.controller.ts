@@ -41,6 +41,8 @@ import {
   DownloadTrackPayload,
   NewTrackPayload,
 } from 'src/notifications/payload.type';
+import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('tracks')
 export class TracksController {
@@ -48,7 +50,8 @@ export class TracksController {
     private readonly tracksService: TracksService,
     private readonly firebaseService: FirebaseService,
     private readonly paginationService: PaginationService,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
+    private readonly prismaService: PrismaService
   ) {}
 
   @Post()
@@ -172,6 +175,13 @@ export class TracksController {
     params: TrackPaginationDto
   ) {
     const userId = req?.user?.id;
+    const isAdmin = await this.prismaService.user.findFirst({
+      where: {
+        id: userId,
+        role: Role.ADMIN,
+      },
+    });
+
     const {
       page,
       pageSize,
@@ -182,6 +192,7 @@ export class TracksController {
       creatorId,
       liked,
       owned,
+      publicStatus,
       ...rest
     } = cleanObject(params);
 
@@ -220,6 +231,11 @@ export class TracksController {
             },
           }),
           ...(owned && { creatorId: userId }),
+          ...(userId
+            ? creatorId === userId || isAdmin
+              ? { publicStatus }
+              : { publicStatus: ReviewStatus.APPROVED }
+            : { publicStatus: ReviewStatus.APPROVED }),
         },
       },
     });
@@ -245,7 +261,6 @@ export class TracksController {
   @Patch(':id')
   @UseGuards(AuthGuard)
   @ApiConsumes('multipart/form-data')
-  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
   @UseInterceptors(FileFieldsInterceptor([{ name: 'cover', maxCount: 1 }]))
   async update(
     @Request() req,
@@ -281,8 +296,14 @@ export class TracksController {
   ) {
     const creatorId = req.user.id as string;
     const isTrackOwner = await this.tracksService.isTrackOwner(id, creatorId);
+    const isAdmin = await this.prismaService.user.findFirst({
+      where: {
+        id: creatorId,
+        role: Role.ADMIN,
+      },
+    });
 
-    if (!isTrackOwner) {
+    if (!isTrackOwner && !isAdmin) {
       throw new BadRequestException({
         message: ['You are not the owner of this track'],
       });
@@ -290,18 +311,21 @@ export class TracksController {
     const payload = {
       ...updateTrackDto,
     };
-    const {
-      cover: [coverFile],
-    } = files;
-    if (coverFile) {
-      const coverUrl = await this.firebaseService.uploadFile({
-        directory: FIREBASE_STORAGE_DIRS.TRACK_COVER(id),
-        fileName: id,
-        fileBuffer: coverFile.buffer,
-        originalFilename: coverFile.originalname,
-        fileType: 'image',
-      });
-      payload['cover'] = coverUrl;
+
+    if (files) {
+      const {
+        cover: [coverFile],
+      } = files;
+      if (coverFile) {
+        const coverUrl = await this.firebaseService.uploadFile({
+          directory: FIREBASE_STORAGE_DIRS.TRACK_COVER(id),
+          fileName: id,
+          fileBuffer: coverFile.buffer,
+          originalFilename: coverFile.originalname,
+          fileType: 'image',
+        });
+        payload['cover'] = coverUrl;
+      }
     }
 
     return await this.tracksService.update(id, payload);
@@ -312,8 +336,13 @@ export class TracksController {
   async remove(@Request() req, @Param('id') id: string) {
     const creatorId = req.user.id as string;
     const isTrackOwner = await this.tracksService.isTrackOwner(id, creatorId);
-    const canDelete = req.user.role === Role.ADMIN || isTrackOwner;
-    if (!canDelete) {
+    const isAdmin = await this.prismaService.user.findFirst({
+      where: {
+        id: creatorId,
+        role: Role.ADMIN,
+      },
+    });
+    if (!isTrackOwner && !isAdmin) {
       throw new BadRequestException({
         message: ['You are not the owner of this track'],
       });

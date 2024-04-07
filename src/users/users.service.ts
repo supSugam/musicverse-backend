@@ -131,25 +131,55 @@ export class UsersService {
     return updatedUser;
   }
 
-  async remove(id: string) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id },
-      });
+  async remove(id: string, currentUserId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
 
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      await this.prisma.user.delete({
-        where: { id },
-      });
-      return {
-        message: 'User deleted successfully',
-      };
-    } catch (err) {
+    if (!user) {
       throw new NotFoundException('User not found');
     }
+
+    const isAuthorized = await this.prisma.user
+      .findFirst({
+        where: {
+          id: currentUserId,
+        },
+      })
+      .then((user) => user.role === UserRole.ADMIN || user.id === id);
+
+    if (!isAuthorized) {
+      throw new NotFoundException('Unauthorized');
+    }
+
+    await this.prisma.user.delete({
+      where: { id },
+    });
+
+    return {
+      message: 'User deleted successfully',
+    };
+  }
+
+  async banUser(id: string, reason?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.bannedUser.create({
+      data: {
+        userId: id,
+        reason,
+      },
+    });
+
+    return {
+      message: 'User Banned.',
+    };
   }
 
   async updateVerifiedStatus(email: string, status: boolean) {

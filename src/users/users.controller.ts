@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Post,
+  ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -16,18 +17,53 @@ import { UserEntity } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { UserRoles } from 'src/guards/roles.decorator';
 import { Role } from 'src/guards/roles.enum';
+import { PaginationService } from 'src/pagination/pagination.service';
+import { UsersPaginationQueryParams } from './users-pagination.decorator';
+import { UserPaginationDto } from './dto/user-pagination.dto';
 
 @Controller('users')
 @ApiTags('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly paginationService: PaginationService
+  ) {}
 
   @Get()
   @UserRoles(Role.ADMIN)
-  async findAll() {
-    return await this.usersService.findAll();
+  async findAll(
+    @Request() req,
+    @UsersPaginationQueryParams(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
+    )
+    params: UserPaginationDto
+  ) {
+    const { role, artistStatus, isVerified, ...rest } = params;
+    return await this.paginationService.paginate({
+      modelName: 'User',
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        artistStatus: true,
+        profile: true,
+      },
+
+      where: {
+        ...(role && { role }),
+        ...(artistStatus && { artistStatus }),
+        ...(isVerified !== undefined && { isVerified }),
+        NOT: { role: Role.ADMIN },
+      },
+
+      ...rest,
+    });
   }
 
+  @Post('/search')
   @Get('/current-user')
   @UseGuards(AuthGuard)
   @ApiCreatedResponse({ type: UserEntity, description: 'Get current user' })
@@ -53,8 +89,16 @@ export class UsersController {
   @UseGuards(AuthGuard)
   @Delete(':id')
   @ApiCreatedResponse({ description: 'Delete a user by Id' })
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+  async remove(@Request() req, @Param('id') id: string) {
+    return await this.usersService.remove(id, req['user'].id);
+  }
+
+  @Post('/ban/:id') // also reason?:string
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ADMIN)
+  @ApiCreatedResponse({ description: 'Ban a user by Id' })
+  async banUser(@Param('id') id: string, @Body('reason') reason?: string) {
+    return await this.usersService.banUser(id, reason);
   }
 
   @UseGuards(AuthGuard)
