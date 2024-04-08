@@ -196,16 +196,16 @@ export class TracksService {
       });
       return { message: 'Track Unliked.' };
     } else {
-      this.eventEmitter.emit(NotificationType.LIKE_TRACK, {
-        trackId,
-        userId,
-      } as LikeTrackPayload);
       // User hasn't liked the track, so like it
       await this.prisma.likedTrack.create({
         data: {
           userId,
           trackId,
         },
+      });
+      this.eventEmitter.emit(NotificationType.LIKE_TRACK, {
+        trackId,
+        userId,
       });
 
       return { message: 'Track liked.' };

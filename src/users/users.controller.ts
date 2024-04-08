@@ -20,6 +20,7 @@ import { Role } from 'src/guards/roles.enum';
 import { PaginationService } from 'src/pagination/pagination.service';
 import { UsersPaginationQueryParams } from './users-pagination.decorator';
 import { UserPaginationDto } from './dto/user-pagination.dto';
+import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
 @Controller('users')
 @ApiTags('users')
@@ -32,14 +33,13 @@ export class UsersController {
   @Get()
   @UserRoles(Role.ADMIN)
   async findAll(
-    @Request() req,
     @UsersPaginationQueryParams(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
     )
     params: UserPaginationDto
   ) {
     const { role, artistStatus, isVerified, ...rest } = params;
-    return await this.paginationService.paginate({
+    const res = await this.paginationService.paginate({
       modelName: 'User',
       select: {
         id: true,
@@ -50,8 +50,15 @@ export class UsersController {
         updatedAt: true,
         artistStatus: true,
         profile: true,
+        isVerified: true,
+        bannedUsers: {
+          select: {
+            id: true,
+            reason: true,
+            createdAt: true,
+          },
+        },
       },
-
       where: {
         ...(role && { role }),
         ...(artistStatus && { artistStatus }),
@@ -61,6 +68,15 @@ export class UsersController {
 
       ...rest,
     });
+
+    res.items = res.items.map((item) => {
+      if (item.bannedUsers.length) {
+        item['isBanned'] = true;
+      }
+      delete item.bannedUsers;
+      return item;
+    });
+    return res;
   }
 
   @Post('/search')
@@ -86,6 +102,17 @@ export class UsersController {
     return this.usersService.update(req['user'].id, updateUserDto);
   }
 
+  @Patch(':id')
+  @UseGuards(AuthGuard)
+  @UserRoles(Role.ADMIN)
+  @ApiCreatedResponse({ type: UserEntity, description: 'Update a user by Id' })
+  updateUserById(
+    @Param('id') id: string,
+    @Body('artistStatus') artistStatus: ReviewStatus
+  ) {
+    return this.usersService.updateArtistStatus(id, artistStatus);
+  }
+
   @UseGuards(AuthGuard)
   @Delete(':id')
   @ApiCreatedResponse({ description: 'Delete a user by Id' })
@@ -93,12 +120,12 @@ export class UsersController {
     return await this.usersService.remove(id, req['user'].id);
   }
 
-  @Post('/ban/:id') // also reason?:string
+  @Post('/toggle-ban/:id')
   @UseGuards(AuthGuard)
   @UserRoles(Role.ADMIN)
   @ApiCreatedResponse({ description: 'Ban a user by Id' })
   async banUser(@Param('id') id: string, @Body('reason') reason?: string) {
-    return await this.usersService.banUser(id, reason);
+    return await this.usersService.toggleBanUser(id, reason);
   }
 
   @UseGuards(AuthGuard)

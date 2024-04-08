@@ -130,13 +130,15 @@ export class AlbumsService {
 
   async remove(id: string) {
     try {
-      const deleteAlbum = await this.prisma.album.delete({
+      await this.prisma.album.delete({
         where: { id },
       });
       await this.firebaseService.deleteDirectory({ directory: `album/${id}` });
-      return deleteAlbum;
+      return { message: 'Album deleted' };
     } catch (error) {
-      throw new BadRequestException({ message: ['Album not found'] });
+      throw new BadRequestException({
+        message: error.message || 'Error deleting album',
+      });
     }
   }
 
@@ -188,5 +190,16 @@ export class AlbumsService {
       } as SaveAlbumPayload);
       return { message: 'Album Saved' };
     }
+  }
+
+  async isAlbumOwner(userId: string, albumId: string) {
+    const album = await this.prisma.album.findFirst({
+      where: {
+        id: albumId,
+        creatorId: userId,
+      },
+    });
+
+    return album ? true : false;
   }
 }

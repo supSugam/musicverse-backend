@@ -1,6 +1,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { getBasePaginationDto } from 'src/pagination/dto/pagination.decorator';
 import { UserPaginationDto } from './dto/user-pagination.dto';
+import { isPureBoolean } from 'src/utils/helpers/string';
 
 export const UsersPaginationQueryParams = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): UserPaginationDto => {
@@ -8,7 +9,9 @@ export const UsersPaginationQueryParams = createParamDecorator(
     return {
       ...getBasePaginationDto(request.query),
       artistStatus: request.query.artistStatus,
-      isVerified: Boolean(request.query.isVerified),
+      isVerified: isPureBoolean(request.query.isVerified)
+        ? request.query.isVerified
+        : undefined,
       role: request.query.role,
     };
   }

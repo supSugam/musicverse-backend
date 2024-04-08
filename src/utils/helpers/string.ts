@@ -17,3 +17,7 @@ export const isUuid = (uuid: string): boolean => {
     /^[a-z0-9]{4,}-[a-z0-9]{4,}-[a-z0-9]{4,}-[a-z0-9]{4,}-[a-z0-9]{4,}/;
   return uuidRegex.test(uuid);
 };
+
+export const isPureBoolean = (value: any): boolean => {
+  return value === 'true' || value === 'false' || typeof value === 'boolean';
+};

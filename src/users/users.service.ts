@@ -7,6 +7,7 @@ import { CredentialsType } from 'src/utils/enums/Auth';
 import { isUUID } from 'class-validator';
 import { FollowPayload } from 'src/notifications/payload.type';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
 @Injectable()
 export class UsersService {
@@ -98,7 +99,7 @@ export class UsersService {
     const updatedUserData = {
       ...(username && { username }),
       ...(email && { email }),
-      ...(user_role && { role: user_role }),
+      // ...(user_role && { role: user_role }),
       // isVerified: true, // TODO: Remove this line
     };
 
@@ -111,11 +112,8 @@ export class UsersService {
         },
       });
 
-      if (existingGenres.length !== genreIds.length) {
-        throw new NotFoundException('Selected genres are invalid.');
-      }
       updatedUserData['genres'] = {
-        connect: genreIds.map((genreId) => ({ id: genreId })),
+        connect: existingGenres.map((genre) => ({ id: genre.id })),
       };
     }
 
@@ -129,6 +127,26 @@ export class UsersService {
 
     delete updatedUser.password;
     return updatedUser;
+  }
+
+  async updateArtistStatus(id: string, status: ReviewStatus) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return await this.prisma.user.update({
+      where: { id },
+      data: {
+        artistStatus: status,
+        ...(status === ReviewStatus.APPROVED
+          ? { role: UserRole.ARTIST }
+          : { role: UserRole.USER }), // TODO: Remove this line
+      },
+    });
   }
 
   async remove(id: string, currentUserId: string) {
@@ -161,25 +179,38 @@ export class UsersService {
     };
   }
 
-  async banUser(id: string, reason?: string) {
+  async toggleBanUser(id: string, reason?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
+      include: {
+        bannedUsers: true,
+      },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    await this.prisma.bannedUser.create({
-      data: {
-        userId: id,
-        reason,
-      },
-    });
+    const isBanned = user.bannedUsers.length > 0;
 
-    return {
-      message: 'User Banned.',
-    };
+    if (isBanned) {
+      await this.prisma.bannedUser.delete({
+        where: { userId: id },
+      });
+      return {
+        message: 'User Unbanned',
+      };
+    } else {
+      await this.prisma.bannedUser.create({
+        data: {
+          userId: id,
+          reason,
+        },
+      });
+      return {
+        message: 'User Banned',
+      };
+    }
   }
 
   async updateVerifiedStatus(email: string, status: boolean) {

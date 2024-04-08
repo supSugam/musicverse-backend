@@ -351,14 +351,6 @@ export class TracksController {
     return { message: ['Track deleted successfully'] };
   }
 
-  @Delete()
-  @UseGuards(AuthGuard)
-  @UserRoles(Role.ADMIN)
-  async removeAll() {
-    await this.tracksService.removeAll();
-    return { message: ['All tracks deleted successfully'] };
-  }
-
   @Post('toggle-like/:id')
   @UseGuards(AuthGuard)
   @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)

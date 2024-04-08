@@ -13,6 +13,7 @@ import {
   ParseFilePipeBuilder,
   HttpStatus,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { AlbumsService } from './albums.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
@@ -35,6 +36,7 @@ import { AlbumPaginationDto } from './dto/album-pagination.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotificationType } from '@prisma/client';
 import { NewAlbumPayload } from 'src/notifications/payload.type';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('albums')
 export class AlbumsController {
@@ -42,7 +44,8 @@ export class AlbumsController {
     private readonly albumsService: AlbumsService,
     private readonly firebaseService: FirebaseService,
     private readonly paginationService: PaginationService,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
+    private readonly prismaService: PrismaService
   ) {}
 
   @Post()
@@ -104,6 +107,69 @@ export class AlbumsController {
     //TODO: use createMany to create multiple tracks for this album
 
     return album;
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard)
+  @ApiConsumes('multipart/form-data')
+  @UserRoles(Role.ARTIST, Role.MEMBER, Role.USER)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'cover', maxCount: 1 }]))
+  async update(
+    @Request() req,
+    @Param('id') id: string,
+    @Body(new ValidationPipe({ transform: true, whitelist: true }))
+    updateAlbumDto: UpdateAlbumDto,
+    @UploadedFiles(
+      new ParseFilePipeBuilder()
+        .addValidator(
+          new CustomUploadFileValidator({
+            cover: {
+              fileTypes: ALLOWED_IMAGE_MIMETYPES,
+              maxFileSize: 1024 * 1024 * 2,
+            },
+          })
+        )
+        .build({
+          fileIsRequired: false,
+          errorHttpStatusCode: HttpStatus.BAD_REQUEST,
+        })
+    )
+    files: {
+      cover?: Express.Multer.File[];
+    }
+  ) {
+    const creatorId = req.user.id as string;
+    const isAlbumOwner = await this.albumsService.isAlbumOwner(id, creatorId);
+    const isAdmin = await this.prismaService.user.findFirst({
+      where: {
+        id: creatorId,
+        role: Role.ADMIN,
+      },
+    });
+
+    if (!isAlbumOwner && !isAdmin) {
+      throw new BadRequestException({
+        message: ['You are not the owner of this track'],
+      });
+    }
+
+    const coverFile = files?.cover?.[0];
+    const payload = {
+      ...updateAlbumDto,
+    };
+
+    if (coverFile) {
+      const coverUrl = await this.firebaseService.uploadFile({
+        directory: FIREBASE_STORAGE_DIRS.ALBUM_COVER(id),
+        fileName: id,
+        fileBuffer: coverFile.buffer,
+        originalFilename: coverFile.originalname,
+        fileType: 'image',
+      });
+      payload['cover'] = coverUrl;
+    }
+
+    return await this.albumsService.update(id, payload);
   }
 
   @Get()
@@ -204,16 +270,22 @@ export class AlbumsController {
     return await this.albumsService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAlbumDto: UpdateAlbumDto) {
-    //TODO: this should be similar to the create method
-    return this.albumsService.update(id, updateAlbumDto);
-  }
-
   @Delete(':id')
   @UseGuards(AuthGuard)
-  @UserRoles(Role.ADMIN)
-  async remove(@Param('id') id: string) {
+  async remove(@Request() req, @Param('id') id: string) {
+    const creatorId = req.user.id as string;
+    const isAlbumOwner = await this.albumsService.isAlbumOwner(id, creatorId);
+    const isAdmin = await this.prismaService.user.findFirst({
+      where: {
+        id: creatorId,
+        role: Role.ADMIN,
+      },
+    });
+    if (!isAlbumOwner && !isAdmin) {
+      throw new BadRequestException({
+        message: ['You are not the owner of this track'],
+      });
+    }
     return await this.albumsService.remove(id);
   }
 

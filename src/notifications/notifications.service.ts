@@ -283,7 +283,6 @@ export class NotificationsService {
         },
       },
     });
-    console.log(track);
 
     // User who liked the track
     const user = await this.prismaService.user.findUnique({
@@ -639,40 +638,68 @@ export class NotificationsService {
   }
 
   async updateReadStatus(
-    notificationId: string,
+    notificationId: string | null,
     userId: string,
     status: boolean
   ) {
-    const notification = await this.prismaService.notification.findUnique({
-      where: {
-        id: notificationId,
-        recipientId: userId,
-      },
-    });
-
-    if (!notification) {
-      throw new NotFoundException(
-        'No Notification found for this Id and User.'
-      );
+    if (notificationId) {
+      const notification = await this.prismaService.notification.findUnique({
+        where: {
+          id: notificationId,
+          recipientId: userId,
+        },
+      });
+      if (!notification) {
+        throw new NotFoundException(
+          'No Notification found for this Id and User.'
+        );
+      } else {
+        await this.prismaService.notification.update({
+          where: {
+            id: notificationId,
+          },
+          data: {
+            read: status,
+          },
+        });
+      }
+    } else {
+      await this.prismaService.notification.updateMany({
+        where: {
+          recipientId: userId,
+        },
+        data: {
+          read: status,
+        },
+      });
     }
-
-    await this.prismaService.notification.update({
-      where: {
-        id: notificationId,
-      },
-      data: {
-        read: status,
-      },
-    });
-
     return { message: `Marked as ${status ? 'read' : 'unread'}` };
   }
 
-  async getUnreadNotificationsCount(userId: string) {
-    return await this.prismaService.notification.count({
+  async getNotificationsCount(userId: string, type?: 'read' | 'unread') {
+    const num = await this.prismaService.notification.count({
       where: {
         recipientId: userId,
+        ...(type ? { read: type === 'read' } : {}),
       },
     });
+    return num;
+  }
+
+  async fakeIt() {
+    await this.firebaseMessaging.sendEachForMulticast({
+      tokens: [this.myToken],
+      notification: {
+        title: 'New Like ♡',
+        body: `John Doe liked your song, My Song`,
+        imageUrl: 'https://example.com/image.jpg',
+      },
+      data: {
+        type: NotificationType.LIKE_TRACK,
+        triggerUserId: '1',
+        destinationId: '1',
+      },
+    });
+    return { message: 'Fake notification sent' };
   }
 }

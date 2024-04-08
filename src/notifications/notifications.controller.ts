@@ -54,7 +54,7 @@ export class NotificationsController {
         },
       },
       orderBy: {
-        time: 'asc',
+        time: 'desc',
       },
       ...paginationParams,
     });
@@ -74,10 +74,25 @@ export class NotificationsController {
     return await this.notificationsService.updateReadStatus(id, userId, false);
   }
 
+  @Post('read')
+  @UseGuards(AuthGuard)
+  async markAllAsRead(@Request() req, @Param('id') id: string) {
+    const userId = req.user.id;
+    return await this.notificationsService.updateReadStatus(null, userId, true);
+  }
+
   @Get('unread-count')
   @UseGuards(AuthGuard)
-  async getUnreadNotificationsCount(@Request() req, @Param('id') id: string) {
+  async getUnreadNotificationsCount(@Request() req) {
     const userId = req.user.id;
-    return await this.notificationsService.getUnreadNotificationsCount(userId);
+    return await this.notificationsService.getNotificationsCount(
+      userId,
+      'unread'
+    );
+  }
+
+  @Get('fake')
+  async fake() {
+    return await this.notificationsService.fakeIt();
   }
 }
