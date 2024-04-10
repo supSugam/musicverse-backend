@@ -181,7 +181,6 @@ export class TracksController {
         role: Role.ADMIN,
       },
     });
-
     const {
       page,
       pageSize,
@@ -232,9 +231,14 @@ export class TracksController {
           }),
           ...(owned && { creatorId: userId }),
           ...(userId
-            ? creatorId === userId || isAdmin
+            ? isAdmin
               ? { publicStatus }
-              : { publicStatus: ReviewStatus.APPROVED }
+              : {
+                  OR: [
+                    { publicStatus: ReviewStatus.APPROVED },
+                    { creatorId: userId },
+                  ],
+                }
             : { publicStatus: ReviewStatus.APPROVED }),
         },
       },

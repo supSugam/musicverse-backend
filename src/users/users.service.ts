@@ -46,7 +46,7 @@ export class UsersService {
     });
   }
 
-  async findOneByUserIdOrUsername(idOrUsername: string) {
+  async findOneByUserIdOrUsername(idOrUsername: string, userId?: string) {
     const isId = isUUID(idOrUsername);
 
     const user = await this.prisma.user.findUnique({
@@ -76,6 +76,21 @@ export class UsersService {
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    if (userId) {
+      const isFollowing = await this.prisma.user.findFirst({
+        where: {
+          id: userId,
+          following: {
+            some: {
+              id: user.id,
+            },
+          },
+        },
+      });
+
+      user['isFollowing'] = !!isFollowing;
     }
 
     return user;
@@ -231,6 +246,9 @@ export class UsersService {
   }
 
   async toggleFollow(userId: string, followUserId: string) {
+    if (userId === followUserId) {
+      throw new NotFoundException('You cannot follow yourself');
+    }
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {

@@ -32,4 +32,9 @@ export class AuthController {
   ) {
     return this.authService.signIn(credentials);
   }
+
+  @Post('refresh-token')
+  refresh(@Request() req) {
+    return this.authService.refresh(req);
+  }
 }

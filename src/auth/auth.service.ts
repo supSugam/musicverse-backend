@@ -132,7 +132,7 @@ export class AuthService {
 
     if (isUserBanned) {
       throw new UnauthorizedException(
-        `You're Banned. ${isUserBanned.reason ? `Reason: ${isUserBanned.reason}` : ''}`
+        `You're Banned. ${isUserBanned.reason ? `Reason: ${isUserBanned.reason}` : 'Not Specified'}`
       );
     }
 
@@ -156,6 +156,62 @@ export class AuthService {
       access_token: token,
       user: payload,
       hasCompletedProfile: !!hasCompletedProfile,
+    };
+  }
+
+  private extractTokenFromHeader(request: any): string | undefined {
+    const [type, token] =
+      request.headers.authorization && request.headers.authorization.split(' ');
+    return type === 'Bearer' ? token : undefined;
+  }
+
+  async refresh(req) {
+    const token = this.extractTokenFromHeader(req);
+
+    if (!token) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    const userPayload = await this.validateToken(token);
+
+    if (!userPayload) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userPayload.id,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    const isUserBanned = await this.prismaService.bannedUser.findFirst({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (isUserBanned) {
+      throw new UnauthorizedException(
+        `You're Banned. ${isUserBanned.reason ? `Reason: ${isUserBanned.reason}` : 'Not Specified'}`
+      );
+    }
+
+    const payload = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      isVerified: user.isVerified,
+    };
+
+    const newToken = await this.jwtService.signAsync(payload);
+
+    return {
+      access_token: newToken,
+      user: payload,
     };
   }
 }

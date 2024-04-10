@@ -15,14 +15,14 @@ import { SaveAlbumPayload } from 'src/notifications/payload.type';
 @Injectable()
 export class AlbumsService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prismaService: PrismaService,
     private readonly firebaseService: FirebaseService,
     private readonly eventEmitter: EventEmitter2
   ) {}
 
   async create(createAlbumDto: CreateAlbumDto) {
     // Check if album with same title exists
-    const albumExists = await this.prisma.album.findFirst({
+    const albumExists = await this.prismaService.album.findFirst({
       where: { title: createAlbumDto.title },
     });
     if (albumExists) {
@@ -31,7 +31,7 @@ export class AlbumsService {
 
     const payload = cleanObject(createAlbumDto);
     const { tags, genreId, creatorId, ...rest } = payload;
-    return await this.prisma.album.create({
+    return await this.prismaService.album.create({
       data: {
         ...rest,
         ...(tags && {
@@ -67,8 +67,8 @@ export class AlbumsService {
     });
   }
 
-  async findOne(id: string) {
-    const album = await this.prisma.album.findUnique({
+  async findOne(id: string, userId?: string) {
+    const album = await this.prismaService.album.findUnique({
       where: {
         id,
       },
@@ -95,13 +95,34 @@ export class AlbumsService {
     if (!album) {
       throw new NotFoundException({ message: [`Album doesn't exist`] });
     } else {
+      if (userId) {
+        album.creator['isFollowing'] =
+          (await this.prismaService.user.count({
+            where: {
+              following: {
+                some: {
+                  id: userId,
+                },
+              },
+              id: album.creator.id,
+            },
+          })) > 0;
+
+        album['isSaved'] =
+          (await this.prismaService.savedAlbum.count({
+            where: {
+              userId,
+              albumId: album.id,
+            },
+          })) > 0;
+      }
       return album;
     }
   }
 
   update(id: string, updateAlbumDto: UpdateAlbumDto) {
     const payload = cleanObject(updateAlbumDto);
-    return this.prisma.album.update({
+    return this.prismaService.album.update({
       where: { id },
       data: {
         ...payload,
@@ -130,7 +151,7 @@ export class AlbumsService {
 
   async remove(id: string) {
     try {
-      await this.prisma.album.delete({
+      await this.prismaService.album.delete({
         where: { id },
       });
       await this.firebaseService.deleteDirectory({ directory: `album/${id}` });
@@ -143,7 +164,7 @@ export class AlbumsService {
   }
 
   async toggleSaveAlbum(userId: string, albumId: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: {
         id: userId,
       },
@@ -153,7 +174,7 @@ export class AlbumsService {
       throw new BadRequestException({ message: ['User not found'] });
     }
 
-    const album = await this.prisma.savedAlbum.findUnique({
+    const album = await this.prismaService.savedAlbum.findUnique({
       where: {
         userId_albumId: {
           userId,
@@ -163,14 +184,14 @@ export class AlbumsService {
     });
 
     if (album) {
-      await this.prisma.savedAlbum.delete({
+      await this.prismaService.savedAlbum.delete({
         where: {
           id: album.id,
         },
       });
       return { message: 'Album Unsaved' };
     } else {
-      await this.prisma.savedAlbum.create({
+      await this.prismaService.savedAlbum.create({
         data: {
           user: {
             connect: {
@@ -193,7 +214,7 @@ export class AlbumsService {
   }
 
   async isAlbumOwner(userId: string, albumId: string) {
-    const album = await this.prisma.album.findFirst({
+    const album = await this.prismaService.album.findFirst({
       where: {
         id: albumId,
         creatorId: userId,
