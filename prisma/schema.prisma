@@ -50,8 +50,6 @@ model User {
   artistStatus          ReviewStatus?   @default(NOT_REQUESTED)
   genres                Genre[]
   profile               Profile?
-  following             Following[]     @relation("Follower")
-  followers             Followers[]     @relation("Following")
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
   tracks                Track[]
@@ -70,6 +68,20 @@ model User {
 playlistInvitationsSent PlaylistInvitation[] @relation("InvitedBy")
   playlistInvitationsReceived PlaylistInvitation[] @relation("InvitedUser")
   bannedUsers           BannedUser[]
+  following     Follower[]     @relation("Following")
+  followers     Follower[]     @relation("Follower")
+}
+
+model Follower {
+  id           String     @id @default(dbgenerated("gen_random_uuid()"))
+  follower     User       @relation("Following", fields: [followerId], references: [id])
+  followerId   String
+  following    User       @relation("Follower", fields: [followingId], references: [id])
+  followingId  String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([followerId, followingId])
 }
 
 model BannedUser {
@@ -201,21 +213,6 @@ model Genre {
   albums      Album[]
 }
 
-model Following {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  follower   User     @relation("Follower", fields: [followerId], references: [id])
-  followerId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model Followers {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  following   User     @relation("Following", fields: [followingId], references: [id])
-  followingId String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
 
 model Play {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))

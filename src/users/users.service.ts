@@ -250,40 +250,39 @@ export class UsersService {
       throw new NotFoundException('You cannot follow yourself');
     }
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        following: true,
-      },
+      where: { id: followUserId },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const isFollowing = user.following.some((u) => u.id === followUserId);
+    const isFollowing = !!(await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        following: {
+          some: {
+            id: followUserId,
+          },
+        },
+      },
+    }));
 
     if (isFollowing) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          following: {
-            disconnect: {
-              id: followUserId,
-            },
-          },
+      await this.prisma.follower.deleteMany({
+        where: {
+          followerId: userId,
+          followingId: followUserId,
         },
       });
     } else {
-      await this.prisma.user.update({
-        where: { id: userId },
+      await this.prisma.follower.create({
         data: {
-          following: {
-            connect: {
-              id: followUserId,
-            },
-          },
+          followerId: userId,
+          followingId: followUserId,
         },
       });
+
       this.eventEmitter.emit(NotificationType.FOLLOW, {
         followerId: userId,
         followingId: followUserId,
