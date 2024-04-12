@@ -584,8 +584,10 @@ export class PlaylistsService {
       throw new BadRequestException('Invalid Invitation');
     }
 
-    if (invitation.expiredAt) {
+    if (invitation.expiresAt < new Date()) {
       throw new BadRequestException('Invitation Expired');
     }
+
+    return invitation;
   }
 }
