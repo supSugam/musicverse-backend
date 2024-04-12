@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 export function splitStringFromLastDot(
   inputString: string
 ): [string, string | undefined] {
@@ -20,4 +21,8 @@ export const isUuid = (uuid: string): boolean => {
 
 export const isPureBoolean = (value: any): boolean => {
   return value === 'true' || value === 'false' || typeof value === 'boolean';
+};
+
+export const generateRandomString = (length: number): string => {
+  return crypto.randomBytes(length).toString('hex');
 };

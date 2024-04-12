@@ -13,6 +13,7 @@ import { Prisma } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotificationType } from 'src/notifications/notification-type.enum';
 import { SavePlaylistPayload } from 'src/notifications/payload.type';
+import { generateRandomString } from 'src/utils/helpers/string';
 
 @Injectable()
 export class PlaylistsService {
@@ -539,6 +540,52 @@ export class PlaylistsService {
         userId,
       } as SavePlaylistPayload);
       return { message: 'Playlist Saved' };
+    }
+  }
+
+  async createPlaylistInvitation({
+    playlistId,
+    userId,
+  }: {
+    playlistId: string;
+    userId: string;
+  }) {
+    // check if user is owner of the playlist
+    const playlist = await this.prismaService.playlist.findUnique({
+      where: {
+        id: playlistId,
+      },
+    });
+
+    if (!playlist) {
+      throw new BadRequestException('Playlist not found');
+    }
+
+    if (playlist.creatorId === userId) {
+      throw new BadRequestException('You are the owner of the playlist');
+    }
+
+    return await this.prismaService.playlistInvitation.create({
+      data: {
+        token: generateRandomString(36),
+        playlistId,
+      },
+    });
+  }
+
+  async isPlaylistInvitationValid(token: string) {
+    const invitation = await this.prismaService.playlistInvitation.findUnique({
+      where: {
+        token,
+      },
+    });
+
+    if (!invitation) {
+      throw new BadRequestException('Invalid Invitation');
+    }
+
+    if (invitation.expiredAt) {
+      throw new BadRequestException('Invitation Expired');
     }
   }
 }

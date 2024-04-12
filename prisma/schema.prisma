@@ -21,12 +21,6 @@ enum ReviewStatus {
   NOT_REQUESTED
 }
 
-enum InvitationStatus {
-  ACCEPTED
-  PENDING
-  REJECTED
-}
-
 
 enum NotificationType {
   FOLLOW
@@ -65,8 +59,6 @@ model User {
   devices               UserDevice[]
   notifications       Notification[] @relation("RecipientNotifications")
   triggerNotifications Notification[] @relation("TriggerUserNotifications")
-playlistInvitationsSent PlaylistInvitation[] @relation("InvitedBy")
-  playlistInvitationsReceived PlaylistInvitation[] @relation("InvitedUser")
   bannedUsers           BannedUser[]
   following     Follower[]     @relation("Following")
   followers     Follower[]     @relation("Follower")
@@ -95,20 +87,16 @@ model BannedUser {
 }
 
 model PlaylistInvitation {
-  id String @id @default(uuid())
-  playlist Playlist @relation(fields: [playlistId], references: [id])
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
   playlistId String
-  invitedUser User @relation(name: "InvitedUser", fields: [invitedUserId], references: [id])
-  invitedUserId String
-  invitedBy User @relation(name: "InvitedBy", fields: [invitedById], references: [id])
-  invitedById String
-  status InvitationStatus? @default(PENDING)
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  token     String   @unique
+  expiresAt DateTime @default(dbgenerated("now() + interval '7 days'"))
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([playlistId, invitedUserId])
+  @@index([playlistId])
 }
-
 
 model UserDevice {
   id          String    @id @default(dbgenerated("gen_random_uuid()"))
@@ -246,7 +234,7 @@ model Playlist {
   tags          Tag[]
   collaborators User[]          @relation("Collaborators")
   savedBy       SavedPlaylist[]
-  invitations PlaylistInvitation[]
+  invitations   PlaylistInvitation[]
 }
 
 model Album {

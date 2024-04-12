@@ -97,16 +97,16 @@ export class AlbumsService {
     } else {
       if (userId) {
         album.creator['isFollowing'] =
-          (await this.prismaService.user.count({
+          !!(await this.prismaService.user.findFirst({
             where: {
+              id: userId,
               following: {
                 some: {
-                  id: userId,
+                  id: album.creator.id,
                 },
               },
-              id: album.creator.id,
             },
-          })) > 0;
+          }));
 
         album['isSaved'] =
           (await this.prismaService.savedAlbum.count({

@@ -383,4 +383,16 @@ export class PlaylistsController {
       userId: req.user.id,
     });
   }
+
+  @Post('invitation/:playlistId')
+  @UseGuards(AuthGuard)
+  async inviteCollaborators(
+    @Request() req,
+    @Param('playlistId') playlistId: string
+  ) {
+    return this.playlistsService.createPlaylistInvitation({
+      playlistId,
+      userId: req.user.id,
+    });
+  }
 }

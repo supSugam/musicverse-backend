@@ -79,7 +79,7 @@ export class UsersService {
     }
 
     if (userId) {
-      const isFollowing = await this.prisma.user.findFirst({
+      user['isFollowing'] = !!(await this.prisma.user.findFirst({
         where: {
           id: userId,
           following: {
@@ -88,9 +88,7 @@ export class UsersService {
             },
           },
         },
-      });
-
-      user['isFollowing'] = !!isFollowing;
+      }));
     }
 
     return user;
@@ -245,48 +243,61 @@ export class UsersService {
     });
   }
 
+  /**
+   * Follow or Unfollow a user
+   * @param userId - The user who is following/unfollowing
+   * @param followUserId - The user who is being followed/unfollowed
+   * @returns
+   * @throws NotFoundException
+   * @throws Error
+   */
   async toggleFollow(userId: string, followUserId: string) {
     if (userId === followUserId) {
       throw new NotFoundException('You cannot follow yourself');
     }
+
     const user = await this.prisma.user.findUnique({
-      where: { id: followUserId },
+      where: {
+        id: followUserId,
+      },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const isFollowing = !!(await this.prisma.user.findFirst({
+    const isFollowing = await this.prisma.follower.findUnique({
       where: {
-        id: userId,
-        following: {
-          some: {
-            id: followUserId,
-          },
-        },
-      },
-    }));
-
-    if (isFollowing) {
-      await this.prisma.follower.deleteMany({
-        where: {
+        followerId_followingId: {
           followerId: userId,
           followingId: followUserId,
+        },
+      },
+    });
+
+    if (isFollowing) {
+      // Unfollow
+      await this.prisma.follower.delete({
+        where: {
+          id: isFollowing.id,
         },
       });
     } else {
+      // Follow
       await this.prisma.follower.create({
         data: {
-          followerId: userId,
-          followingId: followUserId,
+          follower: {
+            connect: {
+              id: userId,
+            },
+          },
+          following: {
+            connect: {
+              id: followUserId,
+            },
+          },
         },
       });
-
-      this.eventEmitter.emit(NotificationType.FOLLOW, {
-        followerId: userId,
-        followingId: followUserId,
-      } as FollowPayload);
     }
 
     return {
