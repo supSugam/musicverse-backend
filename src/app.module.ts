@@ -22,6 +22,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationsService } from './notifications/notifications.service';
 import { FirebaseModule } from './firebase/firebase.module';
+import { RecommendationsModule } from './recommendations/recommendations.module';
 @Module({
   imports: [
     PrismaModule,
@@ -65,6 +66,7 @@ import { FirebaseModule } from './firebase/firebase.module';
     EventEmitterModule.forRoot(),
     NotificationsModule,
     FirebaseModule,
+    RecommendationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, NotificationsService],

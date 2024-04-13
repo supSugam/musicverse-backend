@@ -390,9 +390,15 @@ export class PlaylistsController {
     @Request() req,
     @Param('playlistId') playlistId: string
   ) {
-    return this.playlistsService.createPlaylistInvitation({
+    return this.playlistsService.createPlaylistInvitation(
       playlistId,
-      userId: req.user.id,
-    });
+      req.user.id
+    );
+  }
+
+  @Post('invitation/:token')
+  @UseGuards(AuthGuard)
+  async acceptInvitation(@Request() req, @Param('token') token: string) {
+    return this.playlistsService.acceptPlaylistInvitation(token, req.user.id);
   }
 }

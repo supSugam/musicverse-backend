@@ -543,13 +543,7 @@ export class PlaylistsService {
     }
   }
 
-  async createPlaylistInvitation({
-    playlistId,
-    userId,
-  }: {
-    playlistId: string;
-    userId: string;
-  }) {
+  async createPlaylistInvitation(playlistId: string, userId: string) {
     // check if user is owner of the playlist
     const playlist = await this.prismaService.playlist.findUnique({
       where: {
@@ -589,5 +583,44 @@ export class PlaylistsService {
     }
 
     return invitation;
+  }
+
+  async acceptPlaylistInvitation(token: string, userId: string) {
+    const invitation = await this.isPlaylistInvitationValid(token);
+
+    const playlist = await this.prismaService.playlist.findUnique({
+      where: {
+        id: invitation.playlistId,
+      },
+    });
+
+    if (!playlist) {
+      throw new BadRequestException('Playlist not found');
+    }
+
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    await this.prismaService.playlist.update({
+      where: {
+        id: invitation.playlistId,
+      },
+      data: {
+        collaborators: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    });
+
+    return { message: 'You can now contribute to this playlist' };
   }
 }
