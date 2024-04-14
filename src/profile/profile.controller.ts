@@ -202,10 +202,4 @@ export class ProfileController {
     }
     return this.profileService.update(userId, payload);
   }
-
-  @Delete()
-  @UseGuards(AuthGuard)
-  remove(@Request() req) {
-    return this.profileService.remove(req['user'].id);
-  }
 }

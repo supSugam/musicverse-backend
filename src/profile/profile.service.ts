@@ -55,8 +55,4 @@ export class ProfileService {
       data: updateProfileDto,
     });
   }
-
-  remove(id: string) {
-    return `This action removes a #${id} profile`;
-  }
 }

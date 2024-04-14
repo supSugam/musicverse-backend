@@ -11,15 +11,18 @@ import { SearchPaginationQueryParams } from './dto/search-pagination.decorator';
 import { SearchPaginationDto } from './dto/search-pagination.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { cleanObject } from 'src/utils/helpers/Object';
+import { BasePaginationQueryParams } from './dto/pagination.decorator';
+import { BasePaginationDto } from './dto/pagination.dto';
+import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
-@Controller('search')
+@Controller('paginate')
 export class PaginationController {
   constructor(
     private readonly paginationService: PaginationService,
     private readonly prismaService: PrismaService
   ) {}
 
-  @Get()
+  @Get('search')
   @UseGuards(AuthGuard)
   async findAll(
     @Request() req,
@@ -247,5 +250,136 @@ export class PaginationController {
     }
 
     return response;
+  }
+
+  @Get('feed')
+  @UseGuards(AuthGuard)
+  async getFeed(
+    @Request() req,
+    @BasePaginationQueryParams() params: BasePaginationDto
+  ) {
+    const newestTracks = await this.paginationService.paginate({
+      page: params.page,
+      pageSize: params.pageSize,
+      modelName: 'Track',
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        tags: true,
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+            artistStatus: true,
+            profile: true,
+          },
+        },
+        genre: true,
+      },
+      where: {
+        AND: [
+          {
+            creator: {
+              followers: {
+                some: {
+                  followerId: req.user.id,
+                },
+              },
+            },
+          },
+          {
+            publicStatus: ReviewStatus.APPROVED,
+          },
+        ],
+      },
+    });
+
+    const newestPlaylists = await this.paginationService.paginate({
+      page: params.page,
+      pageSize: params.pageSize,
+      modelName: 'Playlist',
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        tags: true,
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+            artistStatus: true,
+            profile: true,
+          },
+        },
+        _count: true,
+      },
+      where: {
+        AND: [
+          {
+            creator: {
+              followers: {
+                some: {
+                  followerId: req.user.id,
+                },
+              },
+            },
+          },
+          { publicStatus: ReviewStatus.APPROVED },
+        ],
+      },
+    });
+
+    const newestAlbums = await this.paginationService.paginate({
+      page: params.page,
+      pageSize: params.pageSize,
+      modelName: 'Album',
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        tags: true,
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+            artistStatus: true,
+            profile: true,
+          },
+        },
+        genre: true,
+        _count: true,
+      },
+      where: {
+        creator: {
+          followers: {
+            some: {
+              followerId: req.user.id,
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      tracks: newestTracks.items.map((item) => ({ ...item, type: 'track' })),
+      playlists: newestPlaylists.items.map((item) => ({
+        ...item,
+        type: 'playlist',
+      })),
+      albums: newestAlbums.items.map((item) => ({ ...item, type: 'album' })),
+    };
   }
 }

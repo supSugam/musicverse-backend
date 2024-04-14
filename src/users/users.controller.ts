@@ -31,14 +31,15 @@ export class UsersController {
   ) {}
 
   @Get()
-  @UserRoles(Role.ADMIN)
+  @UseGuards(AuthGuard)
   async findAll(
     @UsersPaginationQueryParams(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
     )
     params: UserPaginationDto
   ) {
-    const { role, artistStatus, isVerified, ...rest } = params;
+    const { role, artistStatus, isVerified, sortByPopularity, ...rest } =
+      params;
     const res = await this.paginationService.paginate({
       modelName: 'User',
       select: {
@@ -58,6 +59,7 @@ export class UsersController {
             createdAt: true,
           },
         },
+        _count: true,
       },
       where: {
         ...(role && { role }),
@@ -65,7 +67,13 @@ export class UsersController {
         ...(isVerified !== undefined && { isVerified }),
         NOT: { role: Role.ADMIN },
       },
-
+      ...(sortByPopularity && {
+        orderBy: {
+          followers: {
+            _count: 'desc',
+          },
+        },
+      }),
       ...rest,
     });
 

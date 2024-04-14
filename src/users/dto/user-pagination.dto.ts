@@ -16,4 +16,8 @@ export class UserPaginationDto extends BasePaginationDto {
   @ApiProperty({ required: false })
   @IsOptional()
   isVerified?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  sortByPopularity?: boolean;
 }

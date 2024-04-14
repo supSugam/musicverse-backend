@@ -13,6 +13,7 @@ export const UsersPaginationQueryParams = createParamDecorator(
         ? request.query.isVerified
         : undefined,
       role: request.query.role,
+      sortByPopularity: isPureBoolean(request.query.sortByPopularity),
     };
   }
 );

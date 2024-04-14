@@ -11,6 +11,7 @@ export const MAIL_PASS = process.env.MAIL_PASS;
 
 export const JWT_SECRET = process.env.JWT_SECRET;
 export const SERVER_PORT = parseInt(process.env.SERVER_PORT);
+export const ZROK_SHARE_2024 = process.env.ZROK_SHARE_2024;
 
 export const FIREBASE_STORAGE_DIRS = {
   USER_AVATAR: (userId: string) => `user/${userId}/avatar`,
