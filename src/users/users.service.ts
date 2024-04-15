@@ -79,14 +79,17 @@ export class UsersService {
     }
 
     if (userId) {
-      user['isFollowing'] = !!(await this.prisma.user.findFirst({
+      user['isFollowing'] = !!(await this.prisma.follower.findFirst({
         where: {
-          id: userId,
-          following: {
-            some: {
-              id: user.id,
-            },
-          },
+          followerId: userId,
+          followingId: user.id,
+        },
+      }));
+
+      user['isFollower'] = !!(await this.prisma.follower.findFirst({
+        where: {
+          followerId: user.id,
+          followingId: userId,
         },
       }));
     }
@@ -374,6 +377,21 @@ export class UsersService {
     return {
       message: 'Device token deregistered successfully',
     };
+  }
+
+  /**
+   *
+   * @param userId : string - The user who is following
+   * @param followUserId : string - The user who is being followed
+   * @returns
+   */
+  async doesFollow(userId: string, followUserId: string) {
+    return !!(await this.prisma.follower.findFirst({
+      where: {
+        followerId: userId,
+        followingId: followUserId,
+      },
+    }));
   }
 
   // TODO: Create Profile, Update Profile, Delete Profile

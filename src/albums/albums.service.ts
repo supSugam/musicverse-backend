@@ -96,6 +96,8 @@ export class AlbumsService {
       throw new NotFoundException({ message: [`Album doesn't exist`] });
     } else {
       if (userId) {
+        album.creator['isMe'] = album.creator.id === userId;
+
         album.creator['isFollowing'] =
           !!(await this.prismaService.user.findFirst({
             where: {

@@ -21,6 +21,8 @@ import { PaginationService } from 'src/pagination/pagination.service';
 import { UsersPaginationQueryParams } from './users-pagination.decorator';
 import { UserPaginationDto } from './dto/user-pagination.dto';
 import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
+import { BasePaginationQueryParams } from 'src/pagination/dto/pagination.decorator';
+import { BasePaginationDto } from 'src/pagination/dto/pagination.dto';
 
 @Controller('users')
 @ApiTags('users')
@@ -98,9 +100,16 @@ export class UsersController {
   }
 
   @Get(':userIdOrUsername')
+  @UseGuards(AuthGuard)
   @ApiCreatedResponse({ description: 'Get a user by Id or Username' })
-  async findOneById(@Param('userIdOrUsername') userIdOrUsername: string) {
-    return this.usersService.findOneByUserIdOrUsername(userIdOrUsername);
+  async findOneById(
+    @Request() req,
+    @Param('userIdOrUsername') userIdOrUsername: string
+  ) {
+    return this.usersService.findOneByUserIdOrUsername(
+      userIdOrUsername,
+      req['user'].id
+    );
   }
 
   @Patch()
@@ -164,4 +173,128 @@ export class UsersController {
   }
 
   // TODO: Profile Routes
+
+  @Get('following/:userId')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ description: 'Get followings by user Id' })
+  async getFollowings(
+    @BasePaginationQueryParams() params: BasePaginationDto,
+    @Request() req,
+    @Param('userId') userId: string
+  ) {
+    const res = await this.paginationService.paginate({
+      modelName: 'User',
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        artistStatus: true,
+        profile: true,
+        isVerified: true,
+        bannedUsers: {
+          select: {
+            id: true,
+            reason: true,
+            createdAt: true,
+          },
+        },
+        _count: true,
+      },
+      where: {
+        followers: {
+          some: {
+            followerId: userId,
+          },
+        },
+      },
+      ...params,
+    });
+
+    res.items = await Promise.all(
+      res.items.map(async (item) => {
+        if (item.bannedUsers.length) {
+          item['isBanned'] = true;
+        }
+        item['isFollowing'] = await this.usersService.doesFollow(
+          req['user'].id,
+          item.id
+        );
+        item['isFollower'] = await this.usersService.doesFollow(
+          item.id,
+          req['user'].id
+        );
+        item['isMe'] = item.id === req['user'].id;
+        delete item.bannedUsers;
+        return item;
+      })
+    );
+
+    return res;
+  }
+  @Get('followers/:userId')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ description: 'Get followers by user Id' })
+  async getFollowers(
+    @BasePaginationQueryParams() params: BasePaginationDto,
+    @Request() req,
+    @Param('userId') userId: string
+  ) {
+    const res = await this.paginationService.paginate({
+      modelName: 'User',
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        artistStatus: true,
+        profile: true,
+        isVerified: true,
+        bannedUsers: {
+          select: {
+            id: true,
+            reason: true,
+            createdAt: true,
+          },
+        },
+        _count: true,
+      },
+      where: {
+        following: {
+          some: {
+            followingId: userId,
+          },
+        },
+      },
+      ...params,
+    });
+    console.log(res);
+
+    res.items = await Promise.all(
+      res.items.map(async (item) => {
+        if (item.bannedUsers.length) {
+          item['isBanned'] = true;
+        }
+        item['isFollowing'] = await this.usersService.doesFollow(
+          req['user'].id,
+          item.id
+        );
+        item['isFollower'] = await this.usersService.doesFollow(
+          item.id,
+          req['user'].id
+        );
+        item['isMe'] = item.id === req['user'].id;
+        delete item.bannedUsers;
+        return item;
+      })
+    );
+
+    console.log(res);
+
+    return res;
+  }
 }

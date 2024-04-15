@@ -221,7 +221,11 @@ export class TracksController {
           ...(selectedGenre && { genreId: selectedGenre }),
           ...(selectedTag && { tags: { some: { id: selectedTag } } }),
           ...(search && { title: { contains: search, mode: 'insensitive' } }),
-          ...(creatorId && { creatorId }),
+          ...(creatorId && {
+            creator: {
+              OR: [{ id: creatorId }, { username: creatorId }],
+            },
+          }),
           ...(liked && {
             likedBy: {
               some: {
