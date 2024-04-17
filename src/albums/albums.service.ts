@@ -191,7 +191,12 @@ export class AlbumsService {
           id: album.id,
         },
       });
-      return { message: 'Album Unsaved' };
+      const updatedCount = await this.prismaService.savedAlbum.count({
+        where: {
+          albumId,
+        },
+      });
+      return { message: 'Album Unsaved', count: updatedCount };
     } else {
       await this.prismaService.savedAlbum.create({
         data: {
@@ -207,11 +212,16 @@ export class AlbumsService {
           },
         },
       });
+      const updatedCount = await this.prismaService.savedAlbum.count({
+        where: {
+          albumId,
+        },
+      });
       this.eventEmitter.emit(NotificationType.SAVE_ALBUM, {
         albumId,
         userId,
       } as SaveAlbumPayload);
-      return { message: 'Album Saved' };
+      return { message: 'Album Saved', count: updatedCount };
     }
   }
 

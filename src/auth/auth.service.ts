@@ -207,6 +207,30 @@ export class AuthService {
       isVerified: user.isVerified,
     };
 
+    // Check user membership expiry and change to user role if expired
+    if (user.role !== UserRole.USER) {
+      const membershipExpired = await this.prismaService.membership.findFirst({
+        where: {
+          userId: user.id,
+          expiresAt: {
+            lte: new Date(),
+          },
+        },
+      });
+
+      if (membershipExpired) {
+        payload.role = UserRole.USER;
+        await this.prismaService.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            role: UserRole.USER,
+          },
+        });
+      }
+    }
+
     const newToken = await this.jwtService.signAsync(payload);
 
     return {

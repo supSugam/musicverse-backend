@@ -297,4 +297,18 @@ export class UsersController {
 
     return res;
   }
+
+  @Post('purchase-membership')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ description: 'Purchase membership' })
+  async purchaseMembership(@Request() req) {
+    return await this.usersService.purchaseMembership(req['user'].id);
+  }
+
+  @Post('apply-artist')
+  @UseGuards(AuthGuard)
+  @ApiCreatedResponse({ description: 'Apply artist' })
+  async applyArtist(@Request() req) {
+    return await this.usersService.applyArtist(req['user'].id);
+  }
 }

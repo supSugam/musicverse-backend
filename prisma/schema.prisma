@@ -269,7 +269,7 @@ model Membership {
   user      User     @relation(fields: [userId], references: [id])
   userId    String
   type      UserRole
-  expiresAt DateTime
+  expiresAt DateTime @default(dbgenerated("now() + interval '1 month'"))
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

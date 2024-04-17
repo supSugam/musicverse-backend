@@ -266,8 +266,9 @@ export class AlbumsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return await this.albumsService.findOne(id);
+  @UseGuards(AuthGuard)
+  async findOne(@Param('id') id: string, @Request() req) {
+    return await this.albumsService.findOne(id, req.user.id as string);
   }
 
   @Delete(':id')

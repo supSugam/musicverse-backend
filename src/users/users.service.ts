@@ -8,6 +8,7 @@ import { isUUID } from 'class-validator';
 import { FollowPayload } from 'src/notifications/payload.type';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
+import { getFormattedDate } from 'src/utils/helpers/date';
 
 @Injectable()
 export class UsersService {
@@ -303,10 +304,16 @@ export class UsersService {
       });
     }
 
+    const updatedCount = await this.prisma.follower.count({
+      where: {
+        followingId: followUserId,
+      },
+    });
     return {
       message: isFollowing
         ? 'Unfollowed successfully'
         : 'Followed successfully',
+      count: updatedCount,
     };
   }
 
@@ -392,6 +399,99 @@ export class UsersService {
         followingId: followUserId,
       },
     }));
+  }
+
+  async purchaseMembership(userId: string) {
+    const userIsAlreadyAMember = !!(await this.prisma.membership.findFirst({
+      where: {
+        userId,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    }));
+
+    if (userIsAlreadyAMember) {
+      throw new Error('You are already a member');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    const membership = await this.prisma.membership.create({
+      data: {
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        type: user.role,
+      },
+    });
+    const updatedRole =
+      user.role === UserRole.ARTIST ? UserRole.ARTIST : UserRole.MEMBER;
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        role: updatedRole,
+      },
+    });
+
+    return {
+      message: `Membership Purchased, Valid Until ${getFormattedDate(membership.expiresAt)} .`,
+      membership,
+    };
+  }
+
+  async applyArtist(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role === UserRole.ARTIST) {
+      throw new Error('You are already an artist');
+    }
+    if (user.artistStatus === ReviewStatus.REQUESTED) {
+      throw new Error('Your artist application is already under review');
+    }
+
+    const userHasMembership = !!(await this.prisma.membership.findFirst({
+      where: {
+        userId,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    }));
+
+    if (!userHasMembership) {
+      throw new Error('You need to be a member to apply for artist');
+    }
+
+    const artistApplication = await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        artistStatus: ReviewStatus.REQUESTED,
+      },
+    });
+
+    return {
+      message: 'Artist Application Submitted',
+      artistApplication,
+    };
   }
 
   // TODO: Create Profile, Update Profile, Delete Profile
