@@ -479,7 +479,7 @@ export class UsersService {
       throw new Error('You need to be a member to apply for artist');
     }
 
-    const artistApplication = await this.prisma.user.update({
+    await this.prisma.user.update({
       where: {
         id: userId,
       },
@@ -489,8 +489,7 @@ export class UsersService {
     });
 
     return {
-      message: 'Artist Application Submitted',
-      artistApplication,
+      message: 'Artist Application Submitted, Awaiting Review',
     };
   }
 

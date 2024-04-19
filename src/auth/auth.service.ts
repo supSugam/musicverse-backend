@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -13,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import { CredentialsType } from 'src/utils/enums/Auth';
 import { JWT_SECRET } from 'src/utils/constants';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ResetPasswordDto } from 'src/mail/dto/reset-password-dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -236,6 +238,67 @@ export class AuthService {
     return {
       access_token: newToken,
       user: payload,
+    };
+  }
+
+  async initiatePasswordChange(email: string) {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Send OTP to user email
+
+    await this.mailService.sendResendOtp({
+      email: user.email,
+      name: user.username,
+      subject: 'Reset Password',
+      text: 'OTP to reset your MusicVerse password:',
+    });
+
+    return {
+      message: 'OTP Sent, Please check your email',
+    };
+  }
+
+  async resetPassword(payload: ResetPasswordDto) {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        email: payload.email,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // const isOtpValid = await this.mailService.verifyOtp({
+    //   email: user.email,
+    //   otp: payload.otp,
+    // });
+
+    // if (!isOtpValid) {
+    //   throw new BadRequestException('Invalid OTP');
+    // }
+
+    const hashedPassword = await getHashedPassword(payload.password);
+
+    await this.prismaService.user.update({
+      where: {
+        email: payload.email,
+      },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    return {
+      message: 'Password Resetted, Please login with your new password',
     };
   }
 }

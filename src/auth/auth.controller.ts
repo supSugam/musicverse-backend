@@ -2,8 +2,10 @@
 import {
   Body,
   Controller,
+  Param,
   Post,
   Request,
+  UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -11,6 +13,8 @@ import { UserEntity } from 'src/users/entities/user.entity';
 import { ApiCreatedResponse } from '@nestjs/swagger';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { ResetPasswordDto } from 'src/mail/dto/reset-password-dto';
+import { AuthGuard } from './auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -34,7 +38,17 @@ export class AuthController {
   }
 
   @Post('refresh-token')
-  refresh(@Request() req) {
-    return this.authService.refresh(req);
+  @UseGuards(AuthGuard)
+  async refresh(@Request() req) {
+    return await this.authService.refresh(req);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return await this.authService.resetPassword(resetPasswordDto);
+  }
+  @Post('initiate-reset-password/:email')
+  async initiateResetPassword(@Param('email') email: string) {
+    return await this.authService.initiatePasswordChange(email);
   }
 }
