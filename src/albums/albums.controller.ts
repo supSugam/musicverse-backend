@@ -276,12 +276,13 @@ export class AlbumsController {
   async remove(@Request() req, @Param('id') id: string) {
     const creatorId = req.user.id as string;
     const isAlbumOwner = await this.albumsService.isAlbumOwner(id, creatorId);
-    const isAdmin = await this.prismaService.user.findFirst({
+    const isAdmin = !!(await this.prismaService.user.findFirst({
       where: {
         id: creatorId,
         role: Role.ADMIN,
       },
-    });
+    }));
+
     if (!isAlbumOwner && !isAdmin) {
       throw new BadRequestException({
         message: ['You are not the owner of this track'],

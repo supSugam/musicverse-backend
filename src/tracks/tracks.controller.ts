@@ -152,16 +152,6 @@ export class TracksController {
     }
 
     const track = await this.tracksService.update(trackId, uploaded);
-
-    // Emit new track event
-    if (!createTrackDto.albumIds || createTrackDto.albumIds.length === 0) {
-      this.eventEmitter.emit(NotificationType.NEW_TRACK, {
-        artistId: track.creatorId,
-        artistName: track.creator.profile.name || track.creator.username,
-        title: track.title,
-        imageUrl: track.cover,
-      } as NewTrackPayload);
-    }
     return track;
   }
 
@@ -334,6 +324,12 @@ export class TracksController {
         });
         payload['cover'] = coverUrl;
       }
+    }
+
+    if (isAdmin && payload.publicStatus === ReviewStatus.APPROVED) {
+      this.eventEmitter.emit(NotificationType.TRACK_PUBLIC_APPROVED, {
+        trackId: id,
+      });
     }
 
     return await this.tracksService.update(id, payload);

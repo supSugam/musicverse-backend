@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Messaging } from 'firebase-admin/lib/messaging/messaging';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -13,6 +13,7 @@ import {
   NewTrackPayload,
   SaveAlbumPayload,
   SavePlaylistPayload,
+  TrackPublicApprovedPayload,
 } from './payload.type';
 import { ApnsConfig } from 'firebase-admin/lib/messaging/messaging-api';
 import { cleanObject } from 'src/utils/helpers/Object';
@@ -22,11 +23,12 @@ export class NotificationsService {
   private readonly firebaseMessaging: Messaging;
   private readonly apnConfig: ApnsConfig;
   private readonly myToken =
-    'epoVHjQOST6dPIOCF7KCe2:APA91bGS1ahoC4L2j6BnUBV7umK0ULVFJY2q2AfHJ2tO4LgXSvEOnFBxDszG5baUGDN4c1D1WFNLpsOsya2eNKqB0XJgEqLqf96m_GDQJHNNp_0bZvbmcLEaLwFjtz6oRrY-vLSATMmc';
+    'excroyT_RkqR0lmPOWxmej:APA91bEst8ZWic10SAZXP_0D-DJwuwKS9bpE-Jagwver0On8kNEmvsm7NG4DTWn6tR8EGLIoYuae-EfpvGnkWacJ5gGAqzc17Pxt6x8AXh47kpukc5c_h6kbgNZ4WtFFgODY46xmCor0';
 
   constructor(
     private readonly firebaseService: FirebaseService,
-    private readonly prismaService: PrismaService
+    private readonly prismaService: PrismaService,
+    private readonly eventEmitter: EventEmitter2
   ) {
     this.firebaseMessaging = this.firebaseService.getMessagingService();
     this.apnConfig = {
@@ -686,20 +688,101 @@ export class NotificationsService {
     return num;
   }
 
-  async fakeIt() {
+  async announcementToAll() {
+    const tokens = (
+      await this.prismaService.userDevice.findMany({
+        select: {
+          deviceToken: true,
+        },
+      })
+    ).map((device) => device.deviceToken);
+    console.log(tokens);
+
     await this.firebaseMessaging.sendEachForMulticast({
-      tokens: [this.myToken],
+      tokens,
       notification: {
-        title: 'New Like ♡',
-        body: `John Doe liked your song, My Song`,
-        imageUrl: 'https://example.com/image.jpg',
-      },
-      data: {
-        type: NotificationType.LIKE_TRACK,
-        triggerUserId: '1',
-        destinationId: '1',
+        title: 'Announcement 📢',
+        body: 'New feature alert! Check out the latest update now!',
       },
     });
-    return { message: 'Fake notification sent' };
+  }
+
+  /*
+   * This method listens to the TRACK_PUBLIC_APPROVED event and sends a notification to the creator of the track.
+   * The notification is stored in the database for the creator of the track.
+   * The notification is sent to the creator of the track.
+   */
+
+  async handleTrackPublicApprovedEvent(
+    trackPublicApprovedPayload: TrackPublicApprovedPayload
+  ) {
+    const { trackId } = trackPublicApprovedPayload;
+
+    // Track that was approved
+    const track = await this.prismaService.track.findUnique({
+      where: {
+        id: trackId,
+      },
+      select: {
+        title: true,
+        cover: true,
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            devices: {
+              select: {
+                deviceToken: true,
+              },
+            },
+            profile: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Notification to be stored in the database
+    const notification = {
+      title: 'Track Approved ✔',
+      body: `Your song, ${track.title}, has been approved and is now public`,
+      ...(track.cover && { imageUrl: track.cover }),
+    };
+
+    // Store the notification in the database
+    await this.prismaService.notification.create({
+      data: {
+        type: NotificationType.TRACK_PUBLIC_APPROVED,
+        triggerUserId: track.creator.id,
+        destinationId: trackId,
+        recipientId: track.creator.id,
+        ...notification,
+      },
+    });
+
+    // Send the notification to the user
+    await this.firebaseMessaging.sendEachForMulticast({
+      tokens: [
+        ...track.creator.devices.map((device) => device.deviceToken),
+        this.myToken,
+      ],
+      notification,
+      data: {
+        type: NotificationType.TRACK_PUBLIC_APPROVED,
+        triggerUserId: track.creator.id,
+        destinationId: trackId,
+      },
+    });
+
+    // Emit new track event
+    this.eventEmitter.emit(NotificationType.NEW_TRACK, {
+      artistId: track.creator.id,
+      artistName: track.creator.profile.name || track.creator.username,
+      title: track.title,
+      imageUrl: track.cover,
+    } as NewTrackPayload);
   }
 }

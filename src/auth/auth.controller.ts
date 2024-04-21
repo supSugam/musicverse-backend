@@ -30,11 +30,11 @@ export class AuthController {
   }
 
   @Post('login')
-  signIn(
+  async signIn(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     credentials: LoginUserDto
   ) {
-    return this.authService.signIn(credentials);
+    return await this.authService.signIn(credentials);
   }
 
   @Post('refresh-token')

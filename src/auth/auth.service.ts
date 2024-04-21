@@ -101,6 +101,8 @@ export class AuthService {
   // User Sign In (User can login with both email and username)
 
   async signIn(signInDto: LoginUserDto) {
+    console.log(await this.prismaService.user.findMany());
+
     const { usernameOrEmail, credentialsType } = signInDto;
     const user = await this.prismaService.user.findFirst({
       where: {
@@ -123,7 +125,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid Credentials, Please try again.');
+      throw new UnauthorizedException('Incorrect Password');
     }
 
     const isUserBanned = await this.prismaService.bannedUser.findFirst({
@@ -132,7 +134,7 @@ export class AuthService {
       },
     });
 
-    if (isUserBanned) {
+    if (!!isUserBanned) {
       throw new UnauthorizedException(
         `You're Banned. ${isUserBanned.reason ? `Reason: ${isUserBanned.reason}` : 'Not Specified'}`
       );

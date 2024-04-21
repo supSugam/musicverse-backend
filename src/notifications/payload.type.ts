@@ -56,3 +56,7 @@ export interface NewPlaylistPayload {
   artistName: string;
   imageUrl?: string;
 }
+
+export interface TrackPublicApprovedPayload {
+  trackId: string;
+}

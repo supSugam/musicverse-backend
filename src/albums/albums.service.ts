@@ -225,14 +225,12 @@ export class AlbumsService {
     }
   }
 
-  async isAlbumOwner(userId: string, albumId: string) {
-    const album = await this.prismaService.album.findFirst({
+  async isAlbumOwner(albumId: string, userId: string) {
+    return !!(await this.prismaService.album.findFirst({
       where: {
         id: albumId,
         creatorId: userId,
       },
-    });
-
-    return album ? true : false;
+    }));
   }
 }

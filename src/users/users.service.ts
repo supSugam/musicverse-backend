@@ -332,28 +332,29 @@ export class UsersService {
         deviceToken,
       },
     });
-
-    if (existingDevice.userId === userId) {
-      return {
-        message: 'Device token already registered',
-      };
-    } else {
-      await this.prisma.userDevice.delete({
-        where: {
-          deviceToken,
-        },
-      });
-
-      await this.prisma.userDevice.create({
-        data: {
-          deviceToken,
-          userId,
-        },
-      });
-      return {
-        message: 'Device token registered successfully',
-      };
+    if (!!existingDevice) {
+      if (existingDevice.userId === userId) {
+        return {
+          message: 'Device token already registered',
+        };
+      } else {
+        await this.prisma.userDevice.delete({
+          where: {
+            deviceToken,
+          },
+        });
+      }
     }
+    await this.prisma.userDevice.create({
+      data: {
+        deviceToken,
+        userId,
+      },
+    });
+
+    return {
+      message: 'Device token registered successfully',
+    };
   }
 
   async deregisterDeviceToken(userId: string, deviceToken: string) {

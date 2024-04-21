@@ -32,6 +32,7 @@ enum NotificationType {
   NEW_TRACK
   NEW_ALBUM
   NEW_PLAYLIST
+  TRACK_PUBLIC_APPROVED
 }
 
 model User {

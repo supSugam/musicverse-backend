@@ -159,7 +159,10 @@ export class UsersController {
     @Request() req,
     @Param('deviceToken') deviceToken: string
   ) {
-    return this.usersService.registerDeviceToken(req['user'].id, deviceToken);
+    return await this.usersService.registerDeviceToken(
+      req['user'].id,
+      deviceToken
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -169,7 +172,10 @@ export class UsersController {
     @Request() req,
     @Param('deviceToken') deviceToken: string
   ) {
-    return this.usersService.deregisterDeviceToken(req['user'].id, deviceToken);
+    return await this.usersService.deregisterDeviceToken(
+      req['user'].id,
+      deviceToken
+    );
   }
 
   // TODO: Profile Routes

@@ -91,8 +91,8 @@ export class NotificationsController {
     );
   }
 
-  @Get('fake')
+  @Get('announcement')
   async fake() {
-    return await this.notificationsService.fakeIt();
+    return await this.notificationsService.announcementToAll();
   }
 }
