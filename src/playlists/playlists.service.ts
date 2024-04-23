@@ -116,7 +116,7 @@ export class PlaylistsService {
     });
 
     if (!playlist) {
-      throw new NotFoundException({ message: [`Album doesn't exist`] });
+      throw new NotFoundException({ message: [`Playlist doesn't exist`] });
     } else {
       if (userId) {
         playlist.creator['isMe'] = playlist.creator.id === userId;

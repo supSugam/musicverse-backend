@@ -9,7 +9,6 @@ import { ConfigModule } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { GenreModule } from './genre/genre.module';
-import { RolesGuard } from './guards/roles.guard';
 import { PaginationModule } from './pagination/pagination.module';
 import { ProfileModule } from './profile/profile.module';
 import { MulterModule } from '@nestjs/platform-express';
@@ -20,9 +19,10 @@ import { PlaylistsModule } from './playlists/playlists.module';
 import { SocketModule } from './socket/socket.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationsModule } from './notifications/notifications.module';
-import { NotificationsService } from './notifications/notifications.service';
 import { FirebaseModule } from './firebase/firebase.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
+import { SeederService } from './seeder/seeder.service';
+import { SeederModule } from './seeder/seeder.module';
 @Module({
   imports: [
     PrismaModule,
@@ -67,8 +67,15 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
     NotificationsModule,
     FirebaseModule,
     RecommendationsModule,
+    SeederModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(private readonly seederService: SeederService) {}
+
+  async onModuleInit() {
+    await this.seederService.seedAdmin();
+  }
+}

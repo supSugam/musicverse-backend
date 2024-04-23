@@ -226,6 +226,8 @@ export class PlaylistsController {
   @Get(':id')
   @UseGuards(AuthGuard)
   async findOne(@Param('id') id: string, @Request() req) {
+    console.log('req.user.id', req.user.id);
+    console.log('id', id);
     return await this.playlistsService.findOne(id, req.user.id as string);
   }
 

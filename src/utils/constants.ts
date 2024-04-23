@@ -13,6 +13,11 @@ export const JWT_SECRET = process.env.JWT_SECRET;
 export const SERVER_PORT = parseInt(process.env.SERVER_PORT);
 export const ZROK_SHARE_2024 = process.env.ZROK_SHARE_2024;
 
+export const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL;
+export const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
+export const SUPER_ADMIN_USERNAME = process.env.SUPER_ADMIN_USERNAME;
+export const SUPER_ADMIN_NAME = process.env.SUPER_ADMIN_NAME;
+
 export const FIREBASE_STORAGE_DIRS = {
   USER_AVATAR: (userId: string) => `user/${userId}/avatar`,
   USER_COVER: (userId: string) => `user/${userId}/cover`,
