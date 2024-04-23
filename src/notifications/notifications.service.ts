@@ -100,10 +100,7 @@ export class NotificationsService {
     // Send the notification to all the users
     await this.firebaseMessaging.sendEachForMulticast({
       // tokens: deviceTokens.map((device) => device.deviceToken),
-      tokens: [
-        ...deviceTokens.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: [...deviceTokens.map((device) => device.deviceToken)],
       notification,
       apns: this.apnConfig,
       data: {
@@ -173,10 +170,7 @@ export class NotificationsService {
     // Send the notification to all the users
     await this.firebaseMessaging.sendEachForMulticast({
       // tokens: deviceTokens.map((device) => device.deviceToken),
-      tokens: [
-        ...deviceTokens.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: [...deviceTokens.map((device) => device.deviceToken)],
       notification,
       apns: this.apnConfig,
       data: {
@@ -246,10 +240,7 @@ export class NotificationsService {
     // Send the notification to all the users
     await this.firebaseMessaging.sendEachForMulticast({
       // tokens: deviceTokens.map((device) => device.deviceToken),
-      tokens: [
-        ...deviceTokens.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: [...deviceTokens.map((device) => device.deviceToken)],
       notification,
       apns: this.apnConfig,
       data: {
@@ -321,10 +312,7 @@ export class NotificationsService {
 
     // Send the notification to the user
     await this.firebaseMessaging.sendEachForMulticast({
-      tokens: [
-        ...track.creator.devices.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: [...track.creator.devices.map((device) => device.deviceToken)],
       notification,
       data: {
         type: NotificationType.LIKE_TRACK,
@@ -392,10 +380,7 @@ export class NotificationsService {
 
     // Send the notification to the user
     await this.firebaseMessaging.sendEachForMulticast({
-      tokens: [
-        ...follower.devices.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: [...follower.devices.map((device) => device.deviceToken)],
       notification,
       data: {
         type: NotificationType.FOLLOW,
@@ -470,10 +455,7 @@ export class NotificationsService {
 
     // Send the notification to the user
     await this.firebaseMessaging.sendEachForMulticast({
-      tokens: [
-        ...track.creator.devices.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: [...track.creator.devices.map((device) => device.deviceToken)],
       notification,
       data: {
         type: NotificationType.DOWNLOAD_TRACK,
@@ -548,10 +530,7 @@ export class NotificationsService {
 
     // Send the notification to the user
     await this.firebaseMessaging.sendEachForMulticast({
-      tokens: [
-        ...playlist.creator.devices.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: [...playlist.creator.devices.map((device) => device.deviceToken)],
       notification,
       data: {
         type: NotificationType.SAVE_PLAYLIST,
@@ -626,10 +605,7 @@ export class NotificationsService {
 
     // Send the notification to the user
     await this.firebaseMessaging.sendEachForMulticast({
-      tokens: [
-        ...album.creator.devices.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: [...album.creator.devices.map((device) => device.deviceToken)],
       notification,
       data: {
         type: NotificationType.SAVE_ALBUM,
@@ -712,7 +688,7 @@ export class NotificationsService {
    * The notification is stored in the database for the creator of the track.
    * The notification is sent to the creator of the track.
    */
-
+  @OnEvent(NotificationType.TRACK_PUBLIC_APPROVED)
   async handleTrackPublicApprovedEvent(
     trackPublicApprovedPayload: TrackPublicApprovedPayload
   ) {
@@ -762,13 +738,9 @@ export class NotificationsService {
         ...notification,
       },
     });
-
     // Send the notification to the user
     await this.firebaseMessaging.sendEachForMulticast({
-      tokens: [
-        ...track.creator.devices.map((device) => device.deviceToken),
-        this.myToken,
-      ],
+      tokens: track.creator.devices.map((device) => device.deviceToken),
       notification,
       data: {
         type: NotificationType.TRACK_PUBLIC_APPROVED,

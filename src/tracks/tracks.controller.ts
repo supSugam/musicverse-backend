@@ -236,6 +236,11 @@ export class TracksController {
             : { publicStatus: ReviewStatus.APPROVED }),
         },
       },
+      orderBy: {
+        plays: {
+          _count: 'desc',
+        },
+      },
     });
     if (userId) {
       const likedTracks = await this.tracksService.getLikedTracks(userId);
@@ -310,20 +315,17 @@ export class TracksController {
       ...updateTrackDto,
     };
 
-    if (files) {
-      const {
-        cover: [coverFile],
-      } = files;
-      if (coverFile) {
-        const coverUrl = await this.firebaseService.uploadFile({
-          directory: FIREBASE_STORAGE_DIRS.TRACK_COVER(id),
-          fileName: id,
-          fileBuffer: coverFile.buffer,
-          originalFilename: coverFile.originalname,
-          fileType: 'image',
-        });
-        payload['cover'] = coverUrl;
-      }
+    const coverFile = files?.cover?.[0];
+
+    if (coverFile) {
+      const coverUrl = await this.firebaseService.uploadFile({
+        directory: FIREBASE_STORAGE_DIRS.TRACK_COVER(id),
+        fileName: id,
+        fileBuffer: coverFile.buffer,
+        originalFilename: coverFile.originalname,
+        fileType: 'image',
+      });
+      payload['cover'] = coverUrl;
     }
 
     if (isAdmin && payload.publicStatus === ReviewStatus.APPROVED) {

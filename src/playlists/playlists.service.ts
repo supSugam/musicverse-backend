@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CreatePlaylistDto,
   CreatePlaylistPayload,
@@ -14,6 +18,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotificationType } from 'src/notifications/notification-type.enum';
 import { SavePlaylistPayload } from 'src/notifications/payload.type';
 import { generateRandomString } from 'src/utils/helpers/string';
+import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
 @Injectable()
 export class PlaylistsService {
@@ -39,7 +44,6 @@ export class PlaylistsService {
         'You already have a playlist with same title'
       );
     }
-
     return await this.prismaService.playlist.create({
       data: {
         title,
@@ -72,19 +76,72 @@ export class PlaylistsService {
     });
   }
 
-  findOne(id: string, include: Prisma.PlaylistInclude) {
-    try {
-      return this.prismaService.playlist.findUnique({
-        where: {
-          id,
+  async findOne(id: string, userId?: string) {
+    const playlist = await this.prismaService.playlist.findUnique({
+      where: {
+        id,
+        OR: [
+          {
+            creatorId: userId,
+          },
+          {
+            collaborators: {
+              some: {
+                id: userId,
+              },
+            },
+          },
+          {
+            publicStatus: ReviewStatus.APPROVED,
+          },
+        ],
+      },
+      include: {
+        _count: true,
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+            artistStatus: true,
+            profile: true,
+          },
         },
-        include: {
-          _count: true,
-          ...include,
-        },
-      });
-    } catch (e) {
-      throw new BadRequestException(e);
+        tags: true,
+        tracks: true,
+      },
+    });
+
+    if (!playlist) {
+      throw new NotFoundException({ message: [`Album doesn't exist`] });
+    } else {
+      if (userId) {
+        playlist.creator['isMe'] = playlist.creator.id === userId;
+
+        playlist.creator['isFollowing'] =
+          !!(await this.prismaService.user.findFirst({
+            where: {
+              id: userId,
+              following: {
+                some: {
+                  id: playlist.creator.id,
+                },
+              },
+            },
+          }));
+
+        playlist['isSaved'] =
+          (await this.prismaService.savedAlbum.count({
+            where: {
+              userId,
+              albumId: playlist.id,
+            },
+          })) > 0;
+      }
+      return playlist;
     }
   }
 

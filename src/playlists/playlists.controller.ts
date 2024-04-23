@@ -39,6 +39,7 @@ import { PlaylistsPaginationQueryParams } from './playlist-pagination.decorator'
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NewPlaylistPayload } from 'src/notifications/payload.type';
 import { NotificationType } from 'src/notifications/notification-type.enum';
+import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
 @Controller('playlists')
 export class PlaylistsController {
@@ -104,13 +105,16 @@ export class PlaylistsController {
     }
 
     // TODO: Only if playlist is public
-    this.eventEmitter.emit(NotificationType.NEW_PLAYLIST, {
-      playlistId: playlist.id,
-      artistId: playlist.creatorId,
-      title: playlist.title,
-      artistName: playlist.creator.username,
-      imageUrl: playlist.cover,
-    } as NewPlaylistPayload);
+
+    if (playlist.publicStatus === ReviewStatus.APPROVED) {
+      this.eventEmitter.emit(NotificationType.NEW_PLAYLIST, {
+        playlistId: playlist.id,
+        artistId: playlist.creatorId,
+        title: playlist.title,
+        artistName: playlist.creator.username,
+        imageUrl: playlist.cover,
+      } as NewPlaylistPayload);
+    }
 
     return playlist;
   }
@@ -140,6 +144,7 @@ export class PlaylistsController {
       ...rest
     } = cleanObject(params);
 
+    console.log('params', params);
     const res = await this.paginationService.paginate({
       modelName: 'Playlist',
       where: {
@@ -151,7 +156,11 @@ export class PlaylistsController {
                 mode: 'insensitive',
               },
             }),
-            ...(owned && { creatorId: userId }),
+            ...(owned
+              ? { creatorId: userId }
+              : {
+                  publicStatus: ReviewStatus.APPROVED,
+                }),
             ...(saved && { savedBy: { some: { userId } } }),
             ...(collaborated && { collaborators: { some: { id: userId } } }),
             ...(containsTrack && { tracks: { some: { id: containsTrack } } }),
@@ -215,47 +224,9 @@ export class PlaylistsController {
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @Query('tracks') tracks: boolean,
-    @Query('collaborators') collaborators: boolean
-  ) {
-    const tracksBool = Boolean(tracks);
-    const collaboratorsBool = Boolean(collaborators);
-
-    return await this.playlistsService.findOne(id, {
-      ...(tracksBool && {
-        tracks: {
-          select: {
-            id: true,
-            title: true,
-            creator: {
-              select: {
-                id: true,
-                username: true,
-                email: true,
-                role: true,
-                createdAt: true,
-                updatedAt: true,
-                artistStatus: true,
-                profile: true,
-              },
-            },
-            trackDuration: true,
-            trackSize: true,
-            src: true,
-            cover: true,
-          },
-        },
-      }),
-      ...(collaboratorsBool && {
-        collaborators: {
-          select: {
-            profile: true,
-          },
-        },
-      }),
-    });
+  @UseGuards(AuthGuard)
+  async findOne(@Param('id') id: string, @Request() req) {
+    return await this.playlistsService.findOne(id, req.user.id as string);
   }
 
   @Patch(':id')

@@ -30,6 +30,7 @@ export class RecommendationsService {
             title: true,
           },
         },
+        userId: true,
       },
       where: {
         OR: [
@@ -38,24 +39,6 @@ export class RecommendationsService {
             user: {
               username: userId,
             },
-          },
-        ],
-        AND: [
-          {
-            OR: [
-              {
-                track: {
-                  publicStatus: ReviewStatus.APPROVED,
-                },
-              },
-              {
-                track: {
-                  creator: {
-                    username: userId,
-                  },
-                },
-              },
-            ],
           },
         ],
       },
@@ -129,7 +112,7 @@ export class RecommendationsService {
       }
     )
       .then((res) => res.json())
-      .then((data) => data.map((track) => track[0]));
+      .then((data) => data);
     return recommendedTracks as string[];
   }
 
@@ -153,18 +136,14 @@ export class RecommendationsService {
         },
         _count: true,
       },
-
       where: {
         id: {
           in: recommendedTrackIds,
         },
       },
     });
-    console.log(
-      'Time taken to fetch recommended tracks: ',
-      Date.now() - start,
-      recommendedTrackIds.length
-    );
+
+    console.log('Recommended tracks: ', recommendedTrackIds);
     return recommendedTracks;
   }
 }

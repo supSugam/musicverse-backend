@@ -69,6 +69,6 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
     RecommendationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, NotificationsService],
+  providers: [AppService],
 })
 export class AppModule {}

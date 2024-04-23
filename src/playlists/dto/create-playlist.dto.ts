@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
+import { ReviewStatus } from 'src/utils/enums/ReviewStatus';
 
 export class CreatePlaylistDto {
   @ApiProperty({ example: 'Hardest To Love' })
@@ -16,6 +17,11 @@ export class CreatePlaylistDto {
   @IsArray()
   @IsString({ each: true, message: 'Tag IDs must be strings' })
   tags?: string[];
+
+  @ApiProperty({ example: 'APPROVED' })
+  @IsOptional()
+  @IsEnum(ReviewStatus)
+  publicStatus?: ReviewStatus = ReviewStatus.NOT_REQUESTED;
 }
 
 export class CreatePlaylistPayload extends CreatePlaylistDto {

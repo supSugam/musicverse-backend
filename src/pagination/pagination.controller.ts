@@ -42,12 +42,20 @@ export class PaginationController {
         pageSize,
         modelName: 'Track',
         where: {
-          OR: [
+          AND: [
             {
               title: {
                 contains: search,
                 mode: 'insensitive',
               },
+            },
+          ],
+          OR: [
+            {
+              publicStatus: ReviewStatus.APPROVED,
+            },
+            {
+              creatorId: userId,
             },
           ],
         },
@@ -96,13 +104,21 @@ export class PaginationController {
         pageSize,
         modelName: 'Playlist',
         where: {
-          OR: [
+          AND: [
             // Search by title
             {
               title: {
                 contains: search,
                 mode: 'insensitive',
               },
+            },
+          ],
+          OR: [
+            {
+              publicStatus: ReviewStatus.APPROVED,
+            },
+            {
+              creatorId: userId,
             },
           ],
         },
@@ -137,7 +153,7 @@ export class PaginationController {
         pageSize,
         modelName: 'Album',
         where: {
-          OR: [
+          AND: [
             // Search by title
             {
               title: {
