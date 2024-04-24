@@ -91,8 +91,8 @@ export class NotificationsController {
     );
   }
 
-  @Get('announcement')
-  async fake() {
-    return await this.notificationsService.announcementToAll();
+  @Post('announcement')
+  async fake(@Param('title') title: string, @Param('content') body: string) {
+    return await this.notificationsService.announcementToAll(title, body);
   }
 }

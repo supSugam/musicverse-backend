@@ -664,7 +664,7 @@ export class NotificationsService {
     return num;
   }
 
-  async announcementToAll() {
+  async announcementToAll(title: string, body: string) {
     const tokens = (
       await this.prismaService.userDevice.findMany({
         select: {
@@ -672,15 +672,19 @@ export class NotificationsService {
         },
       })
     ).map((device) => device.deviceToken);
-    console.log(tokens);
 
-    await this.firebaseMessaging.sendEachForMulticast({
-      tokens,
-      notification: {
-        title: 'Announcement 📢',
-        body: 'New feature alert! Check out the latest update now!',
-      },
-    });
+    if (tokens.length) {
+      await this.firebaseMessaging.sendEachForMulticast({
+        tokens,
+        notification: {
+          title,
+          body,
+        },
+      });
+    }
+    return {
+      message: tokens.length ? 'Announcement sent' : 'No devices to send to',
+    };
   }
 
   /*
