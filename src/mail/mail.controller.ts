@@ -42,7 +42,6 @@ export class MailController {
       });
       return { message: 'OTP Verification Successful.' };
     } else {
-      // throw unauthorized exception
       throw new UnauthorizedException('Invalid OTP, Please try again.');
     }
   }
