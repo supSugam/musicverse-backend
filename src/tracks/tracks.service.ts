@@ -155,10 +155,12 @@ export class TracksService {
   }
 
   async isTrackOwner(trackId: string, userId: string) {
-    const track = await this.prisma.track.findUnique({
-      where: { id: trackId },
-      select: { creatorId: true },
+    const track = await this.prisma.track.findFirst({
+      where: {
+        id: trackId,
+      },
     });
+
     if (!track) throw new BadRequestException({ message: 'Track not found' });
 
     return track && track.creatorId === userId;
@@ -166,11 +168,32 @@ export class TracksService {
 
   async remove(id: string) {
     try {
+      // await this.prisma.track.delete({
+      //   where: { id },
+      // });
+      // plays           Play[]
+      // playlists       Playlist[] // Playlists containing this track
+      // albums          Album[] // Albums containing this track
+      // tags            Tag[]
+      // likedBy         LikedTrack[]  // Tracks liked by users
+      // downloads       Download[]
+
+      // remove track from plylist/album/
+      await this.prisma.play.deleteMany({
+        where: { trackId: id },
+      });
+      await this.prisma.likedTrack.deleteMany({
+        where: { trackId: id },
+      });
+      await this.prisma.download.deleteMany({
+        where: { trackId: id },
+      });
       await this.prisma.track.delete({
         where: { id },
       });
       await this.firebaseService.deleteDirectory({ directory: `track/${id}` });
     } catch (error) {
+      console.log(error);
       throw new BadRequestException({ message: 'Track not found' });
     }
   }
